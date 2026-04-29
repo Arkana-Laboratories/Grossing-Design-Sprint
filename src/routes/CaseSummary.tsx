@@ -187,7 +187,7 @@ function NeuroSummary({ idf, caseData }: { idf: NeuroIdfState; caseData: Case })
           </div>
         )}
         <div className="text-sm text-arkana-black">
-          <span className="text-xs uppercase tracking-wide text-arkana-gray-500 mr-2">
+          <span className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mr-2">
             Quality:
           </span>
           {tissueQualityLabel}
@@ -236,7 +236,7 @@ function SpecimenSummary({
       )}
       {specimen.comments && (
         <p className="text-sm text-arkana-black mt-3">
-          <span className="text-xs uppercase tracking-wide text-arkana-gray-500 mr-2">
+          <span className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mr-2">
             Notes:
           </span>
           {specimen.comments}
@@ -249,7 +249,7 @@ function SpecimenSummary({
 function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-arkana-gray-500">{label}</dt>
+      <dt className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500">{label}</dt>
       <dd className="text-arkana-black font-medium mt-0.5">{children}</dd>
     </div>
   );

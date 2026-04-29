@@ -195,7 +195,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="text-3xl font-semibold text-arkana-black">{value}</div>
-      <div className="text-xs uppercase tracking-wide text-arkana-gray-500 mt-1">{label}</div>
+      <div className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mt-1">{label}</div>
     </div>
   );
 }

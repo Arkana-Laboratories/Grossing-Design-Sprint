@@ -182,7 +182,7 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
       </div>
 
       <Card title="Intake">
-        <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-2">
+        <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
           Paperwork matches specimen bottles?
         </label>
         <div className="flex gap-2">
@@ -205,7 +205,7 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
 
       <Card title="Dictation">
         <div className="mb-3">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-2">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
             Demo preset
           </label>
           <select
@@ -231,7 +231,7 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
             <button
               type="button"
               onClick={() => setLogOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 h-10 text-xs uppercase tracking-wide text-arkana-gray-500 hover:bg-arkana-gray-50 transition"
+              className="w-full flex items-center justify-between px-4 h-10 text-xs uppercase tracking-wide font-bold text-arkana-gray-500 hover:bg-arkana-gray-50 transition"
             >
               <span>Routing log ({routingLog.length} clause{routingLog.length === 1 ? '' : 's'})</span>
               <span aria-hidden>{logOpen ? '▾' : '▸'}</span>
@@ -314,7 +314,7 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
           })}
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-2">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
             Tissue Quality
           </label>
           <div className="flex flex-wrap gap-2">
@@ -406,7 +406,7 @@ function SpecimenBlock({
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
         <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             Side
           </label>
           <div className="flex gap-1">
@@ -429,7 +429,7 @@ function SpecimenBlock({
           </div>
         </div>
         <div className="md:col-span-4">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             Biopsy Site
           </label>
           <input
@@ -441,7 +441,7 @@ function SpecimenBlock({
           />
         </div>
         <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             # Frags
           </label>
           <input
@@ -455,7 +455,7 @@ function SpecimenBlock({
           />
         </div>
         <div className="md:col-span-4">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             Size (cm)
           </label>
           <input
@@ -468,7 +468,7 @@ function SpecimenBlock({
         </div>
 
         <div className="md:col-span-6">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             Color
           </label>
           <div className="flex flex-wrap gap-1">
@@ -491,7 +491,7 @@ function SpecimenBlock({
           </div>
         </div>
         <div className="md:col-span-6">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             Received In
           </label>
           <div className="flex flex-wrap gap-1">
@@ -523,7 +523,7 @@ function SpecimenBlock({
         </div>
 
         <div className="md:col-span-12">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
             Comments (other)
           </label>
           <input

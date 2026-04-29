@@ -12,7 +12,7 @@ interface Props {
 export function DescriptorChips({ selected, onToggle, autoThin }: Props) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-2">
+      <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
         Descriptors
       </label>
       <div className="flex flex-wrap gap-1.5">

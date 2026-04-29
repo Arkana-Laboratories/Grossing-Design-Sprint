@@ -4,7 +4,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: [
+          'Montserrat',
+          'Carlito',
+          'system-ui',
+          '-apple-system',
+          'Segoe UI',
+          'Arial',
+          'sans-serif',
+        ],
       },
       colors: {
         arkana: {
@@ -19,8 +27,11 @@ export default {
           blue: '#0C49FF',
           'blue-light': '#DBE4FF',
           green: '#0FA835',
-          'green-light': '#D3F2E1',
+          'green-light': '#DBF2E1',
         },
+      },
+      letterSpacing: {
+        'arkana-tight': '-0.02em',
       },
     },
   },

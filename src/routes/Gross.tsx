@@ -75,7 +75,7 @@ export function Gross() {
       {mode === 'input' && (
         <Card className="mt-5">
           <form onSubmit={handleInputSubmit}>
-            <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-2">
+            <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
               Accession #
             </label>
             <div className="flex gap-3">

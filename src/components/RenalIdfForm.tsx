@@ -168,7 +168,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
 
       <Card title="Dictation">
         <div className="mb-3">
-          <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-2">
+          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
             Demo preset
           </label>
           <select
@@ -194,7 +194,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
             <button
               type="button"
               onClick={() => setLogOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 h-10 text-xs uppercase tracking-wide text-arkana-gray-500 hover:bg-arkana-gray-50 transition"
+              className="w-full flex items-center justify-between px-4 h-10 text-xs uppercase tracking-wide font-bold text-arkana-gray-500 hover:bg-arkana-gray-50 transition"
             >
               <span>Routing log ({routingLog.length} clause{routingLog.length === 1 ? '' : 's'})</span>
               <span aria-hidden>{logOpen ? '▾' : '▸'}</span>
@@ -250,7 +250,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                     <div className="md:col-span-2">
-                      <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+                      <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
                         Pieces
                       </label>
                       <input
@@ -264,7 +264,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                       />
                     </div>
                     <div className="md:col-span-10">
-                      <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+                      <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
                         Size
                       </label>
                       <input
@@ -282,7 +282,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                     autoThin={detectThinFromSize(state.size)}
                   />
                   <div>
-                    <label className="block text-xs uppercase tracking-wide text-arkana-gray-500 mb-1">
+                    <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
                       Notes (other)
                     </label>
                     <input

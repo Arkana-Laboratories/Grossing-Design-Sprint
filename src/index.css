@@ -9,5 +9,13 @@ html, body, #root {
 body {
   background-color: #F2F3F3;
   color: #121314;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Montserrat', 'Carlito', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
