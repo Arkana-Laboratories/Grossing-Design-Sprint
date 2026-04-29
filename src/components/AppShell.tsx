@@ -1,8 +1,10 @@
 import { Outlet, Link } from 'react-router-dom';
 import { ArkanaLogo } from './brand/ArkanaLogo';
+import { useDemoPreset } from '../state/DemoPresetContext';
 
 export function AppShell() {
   const year = new Date().getFullYear();
+  const { presets, activePresetId, setActivePresetId } = useDemoPreset();
   return (
     <div className="min-h-full flex flex-col bg-arkana-gray-50">
       <header className="sticky top-0 z-10 bg-white border-b border-arkana-gray-200 h-16 flex items-center px-6 justify-between">
@@ -15,7 +17,25 @@ export function AppShell() {
             Cortex Grossing
           </span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {presets.length > 0 && (
+            <label className="hidden md:flex items-center gap-2 text-xs">
+              <span className="font-bold uppercase tracking-wide text-arkana-gray-500">
+                Demo
+              </span>
+              <select
+                value={activePresetId ?? ''}
+                onChange={(e) => setActivePresetId(e.target.value)}
+                className="h-9 max-w-[18rem] rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+              >
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             aria-label="Notifications"
             className="relative h-10 w-10 rounded-full hover:bg-arkana-gray-50 flex items-center justify-center text-arkana-gray-500 transition"

@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import { AppShell } from './components/AppShell';
 import { ToastHost } from './components/ToastHost';
 import { CaseSessionProvider } from './state/CaseSessionContext';
+import { DemoPresetProvider } from './state/DemoPresetContext';
 import { Login } from './routes/Login';
 import { Landing } from './routes/Landing';
 import { Search } from './routes/Search';
@@ -25,6 +26,7 @@ function App() {
     <BrowserRouter>
       <ToastHost>
         <CaseSessionProvider>
+          <DemoPresetProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route element={<RequireAuth />}>
@@ -41,6 +43,7 @@ function App() {
               </Route>
             </Route>
           </Routes>
+          </DemoPresetProvider>
         </CaseSessionProvider>
       </ToastHost>
     </BrowserRouter>

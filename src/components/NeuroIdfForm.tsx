@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Tag } from './ui/Tag';
 import { DictationMic } from './DictationMic';
 import { useCaseSession } from '../state/CaseSessionContext';
+import { useRegisterDemoPresets } from '../state/DemoPresetContext';
 import { useToast } from './ToastHost';
 import {
   NEURO_IDF_TEMPLATE,
@@ -33,22 +34,22 @@ interface Props {
 
 type ActiveSpecimen = 'A' | 'B';
 
-const PRESET_TRANSCRIPTS: { id: string; label: string; transcript: string }[] = [
+const NEURO_PRESETS = [
   {
-    id: 'specimen-a-only',
-    label: 'Specimen A only — single biopsy',
+    id: 'neuro-specimen-a-only',
+    label: 'Neuro · Specimen A only — single biopsy',
     transcript:
       'specimen a three at one point one by zero point one by zero point one comma two at zero point nine by zero point one by zero point one',
   },
   {
-    id: 'two-specimens',
-    label: 'Specimen A + B — multi-site',
+    id: 'neuro-two-specimens',
+    label: 'Neuro · Specimen A + B — multi-site',
     transcript:
       'specimen a three at one point two by zero point one by zero point one specimen b two at zero point eight by zero point one by zero point one',
   },
   {
-    id: 'no-keyword',
-    label: 'No keyword — defaults to Specimen A',
+    id: 'neuro-no-keyword',
+    label: 'Neuro · No keyword — defaults to Specimen A',
     transcript:
       'two at one point five by zero point one by zero point one comma three at one point three by zero point one by zero point one',
   },
@@ -59,7 +60,8 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
   const toast = useToast();
   const { updateNeuro, resetIdf } = useCaseSession();
 
-  const [presetId, setPresetId] = useState(PRESET_TRANSCRIPTS[0]!.id);
+  const presets = useMemo(() => NEURO_PRESETS, []);
+  const activePreset = useRegisterDemoPresets(presets) ?? NEURO_PRESETS[0]!;
   const [pulsedKeys, setPulsedKeys] = useState<NeuroSpecimenKey[]>([]);
   const [lastSource, setLastSource] = useState<Partial<Record<NeuroSpecimenKey, string>>>({});
   const [routingLog, setRoutingLog] = useState<RoutedClause[]>([]);
@@ -70,9 +72,6 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
     const t = window.setTimeout(() => setPulsedKeys([]), 1400);
     return () => window.clearTimeout(t);
   }, [pulsedKeys]);
-
-  const activePreset =
-    PRESET_TRANSCRIPTS.find((p) => p.id === presetId) ?? PRESET_TRANSCRIPTS[0]!;
 
   function patchSpecimen(target: ActiveSpecimen, patch: Partial<NeuroSpecimenState>) {
     const key = target === 'A' ? 'specimenA' : 'specimenB';
@@ -204,22 +203,6 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
       </Card>
 
       <Card title="Dictation">
-        <div className="mb-3">
-          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
-            Demo preset
-          </label>
-          <select
-            value={presetId}
-            onChange={(e) => setPresetId(e.target.value)}
-            className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red bg-white"
-          >
-            {PRESET_TRANSCRIPTS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
         <DictationMic
           onTranscriptComplete={handleTranscriptComplete}
           presetTranscript={activePreset.transcript}

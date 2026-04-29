@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Tag } from './ui/Tag';
 import { DictationMic } from './DictationMic';
 import { useCaseSession } from '../state/CaseSessionContext';
+import { useRegisterDemoPresets } from '../state/DemoPresetContext';
 import { useToast } from './ToastHost';
 import {
   RENAL_IDF_TEMPLATE,
@@ -27,22 +28,22 @@ interface Props {
   idf: RenalIdfState;
 }
 
-const PRESET_TRANSCRIPTS: { id: string; label: string; transcript: string }[] = [
+const RENAL_PRESETS = [
   {
-    id: 'three-bottle',
-    label: '3-bottle: formalin + michel + glute',
+    id: 'renal-three-bottle',
+    label: 'Renal · 3-bottle: formalin + michel + glute',
     transcript:
       "formalin two at one point one by zero point one by zero point one comma three at zero point nine by zero point one by zero point one michel's two at one point five by zero point one by zero point one glute one at zero point five by zero point one by zero point one",
   },
   {
-    id: 'two-bottle',
-    label: '2-bottle: formalin + michel (no glute → fan-out)',
+    id: 'renal-two-bottle',
+    label: 'Renal · 2-bottle: formalin + michel (no glute → fan-out)',
     transcript:
       "formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one michel's two at one point four by zero point one by zero point one",
   },
   {
-    id: 'one-bottle',
-    label: '1-bottle: formalin only (fans to LM + EM)',
+    id: 'renal-one-bottle',
+    label: 'Renal · 1-bottle: formalin only (fans to LM + EM)',
     transcript:
       'formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one',
   },
@@ -53,7 +54,8 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   const toast = useToast();
   const { updateRenal, resetIdf } = useCaseSession();
 
-  const [presetId, setPresetId] = useState(PRESET_TRANSCRIPTS[0]!.id);
+  const presets = useMemo(() => RENAL_PRESETS, []);
+  const activePreset = useRegisterDemoPresets(presets) ?? RENAL_PRESETS[0]!;
   const [pulsedKeys, setPulsedKeys] = useState<RenalProcedureKey[]>([]);
   const [lastSource, setLastSource] = useState<Partial<Record<RenalProcedureKey, string>>>({});
   const [routingLog, setRoutingLog] = useState<RoutedClause[]>([]);
@@ -64,9 +66,6 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     const t = window.setTimeout(() => setPulsedKeys([]), 1400);
     return () => window.clearTimeout(t);
   }, [pulsedKeys]);
-
-  const activePreset =
-    PRESET_TRANSCRIPTS.find((p) => p.id === presetId) ?? PRESET_TRANSCRIPTS[0]!;
 
   function patchProcedure(
     key: RenalProcedureKey,
@@ -167,22 +166,6 @@ export function RenalIdfForm({ caseData, idf }: Props) {
       />
 
       <Card title="Dictation">
-        <div className="mb-3">
-          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
-            Demo preset
-          </label>
-          <select
-            value={presetId}
-            onChange={(e) => setPresetId(e.target.value)}
-            className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red bg-white"
-          >
-            {PRESET_TRANSCRIPTS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </div>
         <DictationMic
           onTranscriptComplete={handleTranscriptComplete}
           presetTranscript={activePreset.transcript}
