@@ -501,7 +501,6 @@ function SpecimenBlock({
           <DescriptorChips
             selected={specimen.descriptors}
             onToggle={onToggleDescriptor}
-            autoThin={detectThinFromSize(specimen.sizeCm)}
           />
         </div>
 

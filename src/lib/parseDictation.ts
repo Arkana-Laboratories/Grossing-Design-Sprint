@@ -73,7 +73,7 @@ export function detectThinFromSize(size: string): boolean {
       .split('×')
       .map((d) => Number(d.trim()))
       .filter((n) => !Number.isNaN(n));
-    if (dims.length >= 2 && dims.some((d) => d <= THIN_THRESHOLD)) return true;
+    if (dims.length >= 2 && dims.some((d) => d < THIN_THRESHOLD)) return true;
   }
   return false;
 }

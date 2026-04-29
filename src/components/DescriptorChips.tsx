@@ -6,10 +6,9 @@ import {
 interface Props {
   selected: TissueDescriptor[];
   onToggle: (value: TissueDescriptor) => void;
-  autoThin?: boolean;
 }
 
-export function DescriptorChips({ selected, onToggle, autoThin }: Props) {
+export function DescriptorChips({ selected, onToggle }: Props) {
   return (
     <div>
       <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
@@ -18,8 +17,6 @@ export function DescriptorChips({ selected, onToggle, autoThin }: Props) {
       <div className="flex flex-wrap gap-1.5">
         {TISSUE_DESCRIPTORS.map((d) => {
           const isSelected = selected.includes(d.value);
-          const isAutoFromMeasurement =
-            d.value === 'thin' && autoThin && isSelected;
           return (
             <button
               key={d.value}
@@ -33,11 +30,6 @@ export function DescriptorChips({ selected, onToggle, autoThin }: Props) {
             >
               {isSelected && <span aria-hidden>✓</span>}
               <span>{d.label}</span>
-              {isAutoFromMeasurement && (
-                <span className="text-[10px] uppercase tracking-wide text-sky-600 ml-0.5">
-                  auto
-                </span>
-              )}
             </button>
           );
         })}

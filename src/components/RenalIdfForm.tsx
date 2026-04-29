@@ -262,7 +262,6 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                   <DescriptorChips
                     selected={state.descriptors}
                     onToggle={(v) => toggleDescriptor(row.key, v)}
-                    autoThin={detectThinFromSize(state.size)}
                   />
                   <div>
                     <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
