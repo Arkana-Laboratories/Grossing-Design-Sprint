@@ -18,6 +18,7 @@ import {
   detectThinFromSize,
   totalPiecesFromMeasurements,
 } from '../lib/parseDictation';
+import { parse } from '../lib/measurements';
 import { MeasurementList } from './MeasurementList';
 import {
   routeRenalDictation,
@@ -150,7 +151,13 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     }
   }
 
+  const validationErrors = collectRenalValidationErrors(idf, caseData);
+
   function handleSubmit() {
+    if (validationErrors.length > 0) {
+      toast({ message: validationErrors[0]!, variant: 'warning' });
+      return;
+    }
     toast({ message: 'IDF submitted to TX queue', variant: 'success' });
     navigate(`/case/${caseData.accessionNumber}/summary`);
   }
@@ -310,16 +317,73 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         />
       </Card>
 
-      <div className="flex justify-end gap-3">
+      {validationErrors.length > 0 && (
+        <div className="rounded-xl border border-arkana-red bg-arkana-red-light/40 p-3">
+          <div className="text-xs uppercase tracking-wide font-bold text-arkana-red-dark mb-1">
+            Cannot submit yet
+          </div>
+          <ul className="text-sm text-arkana-red-dark space-y-0.5">
+            {validationErrors.map((err, idx) => (
+              <li key={idx}>· {err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3 flex-wrap">
         <Button variant="ghost" onClick={handleReset}>
           Reset form
         </Button>
-        <Button variant="primary" size="lg" onClick={handleSubmit}>
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={handleSubmit}
+          disabled={validationErrors.length > 0}
+        >
           Submit IDF
         </Button>
       </div>
     </div>
   );
+}
+
+function collectRenalValidationErrors(
+  idf: RenalIdfState,
+  caseData: Case,
+): string[] {
+  const errors: string[] = [];
+
+  const preservatives = new Set(caseData.materials.map((m) => m.preservative));
+  const lmHas = parse(idf.procedures.lightMicroscopy.size).length > 0;
+  const ifHas = parse(idf.procedures.immunofluorescence.size).length > 0;
+  const emHas = parse(idf.procedures.electronMicroscopy.size).length > 0;
+
+  // Bottle-keyed required sections — each received bottle implies a target
+  // procedure that must carry at least one measurement.
+  if (preservatives.has('formalin') && !lmHas) {
+    errors.push(
+      'Formalin bottle received — Light Microscopy needs at least one measurement.',
+    );
+  }
+  if (preservatives.has('michels') && !ifHas) {
+    errors.push(
+      "Michel's bottle received — Immunofluorescence needs at least one measurement.",
+    );
+  }
+  if (preservatives.has('glutaraldehyde') && !emHas) {
+    errors.push(
+      'Glutaraldehyde bottle received — Electron Microscopy needs at least one measurement.',
+    );
+  }
+
+  // Fallback when the case has no bottle-keyed rules (no materials).
+  if (errors.length === 0 && !lmHas && !ifHas && !emHas) {
+    errors.push(
+      'At least one procedure (Light Microscopy, Immunofluorescence, or Electron Microscopy) needs a measurement.',
+    );
+  }
+
+  return errors;
 }
 
 function humanLabel(target: string): string {

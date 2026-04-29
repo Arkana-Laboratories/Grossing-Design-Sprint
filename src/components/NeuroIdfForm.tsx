@@ -15,6 +15,7 @@ import {
 } from '../templates/neuroIdf';
 import type { Case } from '../mock/types';
 import { detectThinFromSize } from '../lib/parseDictation';
+import { parse } from '../lib/measurements';
 import {
   routeNeuroDictation,
   applyToNeuro,
@@ -148,7 +149,13 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
     }
   }
 
+  const validationErrors = collectNeuroValidationErrors(idf);
+
   function handleSubmit() {
+    if (validationErrors.length > 0) {
+      toast({ message: validationErrors[0]!, variant: 'warning' });
+      return;
+    }
     toast({ message: 'IDF submitted to TX queue', variant: 'success' });
     navigate(`/case/${caseData.accessionNumber}/summary`);
   }
@@ -340,11 +347,29 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
         />
       </Card>
 
-      <div className="flex justify-end gap-3">
+      {validationErrors.length > 0 && (
+        <div className="rounded-xl border border-arkana-red bg-arkana-red-light/40 p-3">
+          <div className="text-xs uppercase tracking-wide font-bold text-arkana-red-dark mb-1">
+            Cannot submit yet
+          </div>
+          <ul className="text-sm text-arkana-red-dark space-y-0.5">
+            {validationErrors.map((err, idx) => (
+              <li key={idx}>· {err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-3 flex-wrap">
         <Button variant="ghost" onClick={handleReset}>
           Reset form
         </Button>
-        <Button variant="primary" size="lg" onClick={handleSubmit}>
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={handleSubmit}
+          disabled={validationErrors.length > 0}
+        >
           Submit IDF
         </Button>
       </div>
@@ -357,6 +382,23 @@ function humanTargetLabel(target: string): string {
     return humanLabelForNeuroTarget(target);
   }
   return target;
+}
+
+function collectNeuroValidationErrors(idf: NeuroIdfState): string[] {
+  const errors: string[] = [];
+  const aHas = parse(idf.specimenA.sizeCm).length > 0;
+  const bHas = idf.specimenBEnabled
+    ? parse(idf.specimenB.sizeCm).length > 0
+    : false;
+  if (!aHas && !bHas) {
+    errors.push('At least one specimen needs a measurement.');
+  }
+  if (idf.specimenBEnabled && !bHas) {
+    errors.push(
+      'Specimen B is enabled but has no measurements — add one or disable Specimen B.',
+    );
+  }
+  return errors;
 }
 
 interface SpecimenBlockProps {

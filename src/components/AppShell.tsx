@@ -7,26 +7,29 @@ export function AppShell() {
   const { presets, activePresetId, setActivePresetId } = useDemoPreset();
   return (
     <div className="min-h-full flex flex-col bg-arkana-gray-50">
-      <header className="sticky top-0 z-10 bg-white border-b border-arkana-gray-200 h-16 flex items-center px-6 justify-between">
-        <Link to="/" className="flex items-center gap-3 text-arkana-black">
-          <ArkanaLogo variant="mark" className="h-7" />
-          <span className="text-arkana-gray-200" aria-hidden>
+      <header className="sticky top-0 z-10 bg-white border-b border-arkana-gray-200 h-14 sm:h-16 flex items-center px-3 sm:px-4 md:px-6 xl:px-8 justify-between gap-2 sm:gap-3">
+        <Link
+          to="/"
+          className="flex items-center gap-2 lg:gap-3 text-arkana-black min-w-0"
+        >
+          <ArkanaLogo variant="mark" className="h-6 lg:h-7 shrink-0" />
+          <span className="text-arkana-gray-200 hidden lg:inline" aria-hidden>
             |
           </span>
-          <span className="text-base font-medium tracking-tight">
+          <span className="hidden sm:inline text-sm lg:text-base font-medium tracking-tight truncate">
             Cortex Grossing
           </span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           {presets.length > 0 && (
-            <label className="hidden md:flex items-center gap-2 text-xs">
-              <span className="font-bold uppercase tracking-wide text-arkana-gray-500">
+            <label className="flex items-center gap-2 text-xs">
+              <span className="hidden lg:inline font-bold uppercase tracking-wide text-arkana-gray-500">
                 Demo
               </span>
               <select
                 value={activePresetId ?? ''}
                 onChange={(e) => setActivePresetId(e.target.value)}
-                className="h-9 max-w-[18rem] rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+                className="h-9 w-32 sm:w-40 md:w-44 lg:w-56 xl:w-72 rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
               >
                 {presets.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -38,7 +41,7 @@ export function AppShell() {
           )}
           <button
             aria-label="Notifications"
-            className="relative h-10 w-10 rounded-full hover:bg-arkana-gray-50 flex items-center justify-center text-arkana-gray-500 transition"
+            className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-arkana-gray-50 flex items-center justify-center text-arkana-gray-500 transition shrink-0"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -57,23 +60,23 @@ export function AppShell() {
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-arkana-red" />
           </button>
           <div
-            className="h-10 w-10 rounded-full bg-arkana-black text-white flex items-center justify-center text-sm font-bold"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-arkana-black text-white flex items-center justify-center text-xs sm:text-sm font-bold shrink-0"
             title="John Doe"
           >
             JD
           </div>
         </div>
       </header>
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-6">
+      <main className="flex-1 w-full max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-4 md:px-6 xl:px-8 py-4 sm:py-6 lg:py-8">
         <Outlet />
       </main>
       <footer className="border-t border-arkana-gray-200 bg-white">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between text-xs text-arkana-gray-500">
+        <div className="w-full max-w-6xl xl:max-w-7xl mx-auto px-3 sm:px-4 md:px-6 xl:px-8 py-3 sm:py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2 text-xs text-arkana-gray-500">
           <div className="flex items-center gap-2">
             <ArkanaLogo variant="mark" className="h-4" />
             <span>© {year} Arkana Laboratories</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <span>Cortex Grossing — internal demo</span>
             <span className="text-arkana-gray-500" aria-hidden>
               ·
