@@ -12,6 +12,10 @@ export interface DemoPreset {
   id: string;
   label: string;
   transcript: string;
+  // Optional metadata used by per-form validators. For renal: which bottles the
+  // dictation represents (e.g. ['formalin'] for the 1-bottle preset). The
+  // validator falls back to caseData.materials when this is omitted.
+  bottles?: string[];
 }
 
 interface DemoPresetContextValue {
@@ -59,7 +63,7 @@ export function useDemoPreset() {
   return ctx;
 }
 
-export function useRegisterDemoPresets(presets: DemoPreset[]) {
+export function useRegisterDemoPresets<T extends DemoPreset>(presets: T[]): T | null {
   const { registerPresets, clearPresets, activePresetId } = useDemoPreset();
   useEffect(() => {
     registerPresets(presets);

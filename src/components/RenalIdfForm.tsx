@@ -13,7 +13,7 @@ import {
   type RenalProcedureKey,
   getRenalSpecimenCategoryLabel,
 } from '../templates/renalIdf';
-import type { Case } from '../mock/types';
+import type { Case, Preservative } from '../mock/types';
 import {
   detectThinFromSize,
   totalPiecesFromMeasurements,
@@ -33,22 +33,32 @@ interface Props {
   idf: RenalIdfState;
 }
 
-const RENAL_PRESETS = [
+interface RenalPreset {
+  id: string;
+  label: string;
+  transcript: string;
+  bottles: Preservative[];
+}
+
+const RENAL_PRESETS: RenalPreset[] = [
   {
     id: 'renal-three-bottle',
     label: 'Renal · 3-bottle: formalin + michel + glute',
+    bottles: ['formalin', 'michels', 'glutaraldehyde'],
     transcript:
       "formalin two at one point one by zero point one by zero point one comma three at zero point nine by zero point one by zero point one michel's two at one point five by zero point one by zero point one glute one at zero point five by zero point one by zero point one",
   },
   {
     id: 'renal-two-bottle',
     label: 'Renal · 2-bottle: formalin + michel (no glute → fan-out)',
+    bottles: ['formalin', 'michels'],
     transcript:
       "formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one michel's two at one point four by zero point one by zero point one",
   },
   {
     id: 'renal-one-bottle',
     label: 'Renal · 1-bottle: formalin only (fans to LM + EM)',
+    bottles: ['formalin'],
     transcript:
       'formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one',
   },
@@ -151,7 +161,11 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     }
   }
 
-  const validationErrors = collectRenalValidationErrors(idf, caseData);
+  const validationErrors = collectRenalValidationErrors(
+    idf,
+    caseData,
+    activePreset.bottles,
+  );
 
   function handleSubmit() {
     if (validationErrors.length > 0) {
@@ -350,16 +364,26 @@ export function RenalIdfForm({ caseData, idf }: Props) {
 function collectRenalValidationErrors(
   idf: RenalIdfState,
   caseData: Case,
+  expectedBottles?: Preservative[],
 ): string[] {
   const errors: string[] = [];
 
-  const preservatives = new Set(caseData.materials.map((m) => m.preservative));
+  // Source of truth for which bottles are "in play":
+  //   1. The active demo preset (e.g. selecting "1-bottle: formalin only"
+  //      narrows expected bottles to ['formalin'])
+  //   2. Fallback to the case's actual received materials (production path)
+  const preservatives = new Set<Preservative>(
+    expectedBottles && expectedBottles.length > 0
+      ? expectedBottles
+      : caseData.materials.map((m) => m.preservative),
+  );
+
   const lmHas = parse(idf.procedures.lightMicroscopy.size).length > 0;
   const ifHas = parse(idf.procedures.immunofluorescence.size).length > 0;
   const emHas = parse(idf.procedures.electronMicroscopy.size).length > 0;
 
-  // Bottle-keyed required sections — each received bottle implies a target
-  // procedure that must carry at least one measurement.
+  // Bottle-keyed required sections — each bottle implies a target procedure
+  // that must carry at least one measurement.
   if (preservatives.has('formalin') && !lmHas) {
     errors.push(
       'Formalin bottle received — Light Microscopy needs at least one measurement.',
@@ -376,8 +400,8 @@ function collectRenalValidationErrors(
     );
   }
 
-  // Fallback when the case has no bottle-keyed rules (no materials).
-  if (errors.length === 0 && !lmHas && !ifHas && !emHas) {
+  // Fallback when no bottle rules apply (no preset selected and no materials).
+  if (errors.length === 0 && preservatives.size === 0 && !lmHas && !ifHas && !emHas) {
     errors.push(
       'At least one procedure (Light Microscopy, Immunofluorescence, or Electron Microscopy) needs a measurement.',
     );
