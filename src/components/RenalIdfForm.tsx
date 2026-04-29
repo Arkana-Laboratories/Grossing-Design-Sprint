@@ -14,7 +14,11 @@ import {
   getRenalSpecimenCategoryLabel,
 } from '../templates/renalIdf';
 import type { Case } from '../mock/types';
-import { detectThinFromSize } from '../lib/parseDictation';
+import {
+  detectThinFromSize,
+  totalPiecesFromMeasurements,
+} from '../lib/parseDictation';
+import { MeasurementList } from './MeasurementList';
 import {
   routeRenalDictation,
   applyToRenal,
@@ -73,8 +77,13 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   ) {
     updateRenal((current) => {
       const next = { ...current.procedures[key], ...patch };
-      if (patch.size !== undefined && detectThinFromSize(next.size)) {
-        if (!next.descriptors.includes('thin')) {
+      if (patch.size !== undefined) {
+        const all = next.size.split(',').map((s) => s.trim()).filter(Boolean);
+        next.pieces = totalPiecesFromMeasurements(all);
+        if (
+          detectThinFromSize(next.size) &&
+          !next.descriptors.includes('thin')
+        ) {
           next.descriptors = [...next.descriptors, 'thin'];
         }
       }
@@ -231,34 +240,11 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                   )}
                 </div>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
-                        Pieces
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={state.pieces}
-                        onChange={(e) =>
-                          patchProcedure(row.key, { pieces: Number(e.target.value) || 0 })
-                        }
-                        className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red"
-                      />
-                    </div>
-                    <div className="md:col-span-10">
-                      <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
-                        Size
-                      </label>
-                      <input
-                        type="text"
-                        value={state.size}
-                        placeholder="e.g. 1@1.1×0.1×0.1"
-                        onChange={(e) => patchProcedure(row.key, { size: e.target.value })}
-                        className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red"
-                      />
-                    </div>
-                  </div>
+                  <MeasurementList
+                    value={state.size}
+                    onChange={(next) => patchProcedure(row.key, { size: next })}
+                    fragmentNoun="piece"
+                  />
                   <DescriptorChips
                     selected={state.descriptors}
                     onToggle={(v) => toggleDescriptor(row.key, v)}

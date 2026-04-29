@@ -1,3 +1,9 @@
+import {
+  totalCountFromStored,
+  detectThinFromStored,
+  joinStored,
+} from './measurements';
+
 const numberWords: Record<string, string> = {
   zero: '0',
   one: '1',
@@ -27,6 +33,18 @@ function wordsToDecimal(input: string): string {
   return result;
 }
 
+// "zero point one" → "0.1"
+// "zero point one to zero point three" → "0.1-0.3"
+function dimWordsToString(input: string): string {
+  const rangeMatch = input.match(/^(.+?)\s+to\s+(.+)$/i);
+  if (rangeMatch) {
+    const min = wordsToDecimal(rangeMatch[1]!);
+    const max = wordsToDecimal(rangeMatch[2]!);
+    if (min && max) return `${min}-${max}`;
+  }
+  return wordsToDecimal(input);
+}
+
 export function parseDictation(transcript: string): string[] {
   const segments = transcript.split(/\s*comma\s*/i).filter(Boolean);
   const measurements: string[] = [];
@@ -36,7 +54,7 @@ export function parseDictation(transcript: string): string[] {
     const countWords = atMatch[1] ?? '';
     const dimWords = atMatch[2] ?? '';
     const count = wordsToDecimal(countWords);
-    const dimParts = dimWords.split(/\s+by\s+/i).map((p) => wordsToDecimal(p));
+    const dimParts = dimWords.split(/\s+by\s+/i).map(dimWordsToString);
     if (count && dimParts.length >= 2 && dimParts.every(Boolean)) {
       measurements.push(`${count}@${dimParts.join('×')}`);
     }
@@ -44,36 +62,18 @@ export function parseDictation(transcript: string): string[] {
   return measurements;
 }
 
+// ─── Compatibility wrappers around the canonical measurements module ─────────
+// These keep the old call sites (RenalIdfForm, NeuroIdfForm, routeDictation)
+// working unchanged. New code should import from ./measurements directly.
+
 export function totalPiecesFromMeasurements(measurements: string[]): number {
-  let total = 0;
-  for (const m of measurements) {
-    const match = m.match(/^(\d+(?:\.\d+)?)@/);
-    if (match && match[1]) {
-      total += Number(match[1]);
-    }
-  }
-  return total;
+  return totalCountFromStored(measurements.join(', '));
 }
 
 export function joinMeasurements(existing: string, incoming: string[]): string {
-  const incomingJoined = incoming.join(', ');
-  if (!existing.trim()) return incomingJoined;
-  if (!incomingJoined) return existing;
-  return `${existing}, ${incomingJoined}`;
+  return joinStored(existing, incoming);
 }
 
-const THIN_THRESHOLD = 0.1;
-
 export function detectThinFromSize(size: string): boolean {
-  if (!size.trim()) return false;
-  const segments = size.split(',').map((s) => s.trim()).filter(Boolean);
-  for (const seg of segments) {
-    const afterAt = seg.includes('@') ? seg.split('@')[1] ?? '' : seg;
-    const dims = afterAt
-      .split('×')
-      .map((d) => Number(d.trim()))
-      .filter((n) => !Number.isNaN(n));
-    if (dims.length >= 2 && dims.some((d) => d < THIN_THRESHOLD)) return true;
-  }
-  return false;
+  return detectThinFromStored(size);
 }

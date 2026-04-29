@@ -25,6 +25,7 @@ import {
   humanLabelForNeuroTarget,
 } from '../templates/neuroIdfRouting';
 import { DescriptorChips } from './DescriptorChips';
+import { MeasurementList } from './MeasurementList';
 import type { TissueDescriptor } from '../templates/descriptors';
 
 interface Props {
@@ -77,8 +78,13 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
     const key = target === 'A' ? 'specimenA' : 'specimenB';
     updateNeuro((current) => {
       const next: NeuroSpecimenState = { ...current[key], ...patch };
-      if (patch.sizeCm !== undefined && detectThinFromSize(next.sizeCm)) {
-        if (!next.descriptors.includes('thin')) {
+      if (patch.sizeCm !== undefined) {
+        const all = next.sizeCm.split(',').map((s) => s.trim()).filter(Boolean);
+        next.fragmentCount = totalPiecesFromMeasurements(all);
+        if (
+          detectThinFromSize(next.sizeCm) &&
+          !next.descriptors.includes('thin')
+        ) {
           next.descriptors = [...next.descriptors, 'thin'];
         }
       }
@@ -423,30 +429,11 @@ function SpecimenBlock({
             className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red"
           />
         </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
-            # Frags
-          </label>
-          <input
-            type="number"
-            min={0}
-            value={specimen.fragmentCount}
-            onChange={(e) =>
-              onChange({ fragmentCount: Number(e.target.value) || 0 })
-            }
-            className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red"
-          />
-        </div>
-        <div className="md:col-span-4">
-          <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-1">
-            Size (cm)
-          </label>
-          <input
-            type="text"
+        <div className="md:col-span-12">
+          <MeasurementList
             value={specimen.sizeCm}
-            placeholder="e.g. 3@1.1×0.1×0.1"
-            onChange={(e) => onChange({ sizeCm: e.target.value })}
-            className="w-full h-10 rounded-lg border border-arkana-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-arkana-red"
+            onChange={(next) => onChange({ sizeCm: next })}
+            fragmentNoun="fragment"
           />
         </div>
 
