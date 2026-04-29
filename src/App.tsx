@@ -12,6 +12,7 @@ import { CaseDetail } from './routes/CaseDetail';
 import { Verify } from './routes/Verify';
 import { Grossing } from './routes/Grossing';
 import { CaseSummary } from './routes/CaseSummary';
+import { EmFinal } from './routes/EmFinal';
 
 function RequireAuth() {
   const isAuthed = typeof window !== 'undefined' && !!localStorage.getItem('cortex.session');
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/case/:accessionNumber/verify" element={<Verify />} />
                 <Route path="/case/:accessionNumber/gross" element={<Grossing />} />
                 <Route path="/case/:accessionNumber/summary" element={<CaseSummary />} />
+                <Route path="/case/:accessionNumber/em-final" element={<EmFinal />} />
                 <Route path="*" element={<PlaceholderRoute />} />
               </Route>
             </Route>

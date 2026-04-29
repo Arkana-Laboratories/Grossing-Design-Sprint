@@ -26,6 +26,7 @@ import {
   type RoutedClause,
 } from '../lib/routeDictation';
 import { DescriptorChips } from './DescriptorChips';
+import { PifChip } from './PifChip';
 import type { TissueDescriptor } from '../templates/descriptors';
 
 interface Props {
@@ -254,11 +255,23 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                     </div>
                     <div className="text-xs text-arkana-gray-500 mt-0.5">{row.subtitle}</div>
                   </div>
-                  {sourceLabel && (
-                    <span className="text-[11px] uppercase tracking-wide text-arkana-red font-medium">
-                      {sourceLabel}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {sourceLabel && (
+                      <span className="text-[11px] uppercase tracking-wide text-arkana-red font-medium">
+                        {sourceLabel}
+                      </span>
+                    )}
+                    <PifChip
+                      isPif={state.isPif}
+                      reason={state.pifReason}
+                      onSet={(reason) =>
+                        patchProcedure(row.key, { isPif: true, pifReason: reason })
+                      }
+                      onClear={() =>
+                        patchProcedure(row.key, { isPif: false, pifReason: null })
+                      }
+                    />
+                  </div>
                 </div>
                 <div className="space-y-3">
                   <MeasurementList
@@ -382,21 +395,26 @@ function collectRenalValidationErrors(
   const ifHas = parse(idf.procedures.immunofluorescence.size).length > 0;
   const emHas = parse(idf.procedures.electronMicroscopy.size).length > 0;
 
+  const lmPif = idf.procedures.lightMicroscopy.isPif;
+  const ifPif = idf.procedures.immunofluorescence.isPif;
+  const emPif = idf.procedures.electronMicroscopy.isPif;
+
   // Bottle-keyed required sections — each bottle implies a target procedure
-  // that must carry at least one measurement.
-  if (preservatives.has('formalin') && !lmHas) {
+  // that must carry at least one measurement, OR be explicitly marked PIF
+  // (no tissue available, with a reason).
+  if (preservatives.has('formalin') && !lmHas && !lmPif) {
     errors.push(
-      'Formalin bottle received — Light Microscopy needs at least one measurement.',
+      'Formalin bottle received — Light Microscopy needs at least one measurement (or mark as PIF).',
     );
   }
-  if (preservatives.has('michels') && !ifHas) {
+  if (preservatives.has('michels') && !ifHas && !ifPif) {
     errors.push(
-      "Michel's bottle received — Immunofluorescence needs at least one measurement.",
+      "Michel's bottle received — Immunofluorescence needs at least one measurement (or mark as PIF).",
     );
   }
-  if (preservatives.has('glutaraldehyde') && !emHas) {
+  if (preservatives.has('glutaraldehyde') && !emHas && !emPif) {
     errors.push(
-      'Glutaraldehyde bottle received — Electron Microscopy needs at least one measurement.',
+      'Glutaraldehyde bottle received — Electron Microscopy needs at least one measurement (or mark as PIF).',
     );
   }
 

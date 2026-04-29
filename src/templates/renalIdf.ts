@@ -47,7 +47,18 @@ export interface RenalProcedureRowState {
   size: string;
   descriptors: TissueDescriptor[];
   notes: string;
+  isPif: boolean;
+  pifReason: string | null;
 }
+
+export const PIF_REASONS = [
+  'Minimal tissue',
+  'No tissue identified',
+  'Tissue lost in processing',
+  'Other',
+] as const;
+
+export type PifReason = (typeof PIF_REASONS)[number];
 
 export interface RenalIdfState {
   panelType: 'renal';
@@ -59,7 +70,14 @@ export interface RenalIdfState {
 export function createEmptyRenalIdf(): RenalIdfState {
   const procedures = {} as Record<RenalProcedureKey, RenalProcedureRowState>;
   for (const row of RENAL_PROCEDURE_ROWS) {
-    procedures[row.key] = { pieces: 0, size: '', descriptors: [], notes: '' };
+    procedures[row.key] = {
+      pieces: 0,
+      size: '',
+      descriptors: [],
+      notes: '',
+      isPif: false,
+      pifReason: null,
+    };
   }
   return {
     panelType: 'renal',

@@ -1,10 +1,57 @@
+import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { ArkanaLogo } from './brand/ArkanaLogo';
 import { useDemoPreset } from '../state/DemoPresetContext';
+import {
+  NotificationsPanel,
+  type Notification,
+} from './NotificationsPanel';
+
+const INITIAL_NOTIFICATIONS: Notification[] = [
+  {
+    id: 'n-1',
+    title: 'Labels printed (Bench 3)',
+    subtitle: 'Case S26-12500 · Doe, Jane',
+    timestamp: '2 min ago',
+    variant: 'info',
+  },
+  {
+    id: 'n-2',
+    title: 'CR requested — age change',
+    subtitle: 'Case S26-12476 · Singh, Robert',
+    timestamp: '18 min ago',
+    variant: 'warning',
+  },
+  {
+    id: 'n-3',
+    title: 'PIF flagged — IF section empty',
+    subtitle: 'Case S26-12431 · Cho, Daniel',
+    timestamp: '1 hr ago',
+    variant: 'danger',
+  },
+  {
+    id: 'n-4',
+    title: 'Case submitted to TX queue',
+    subtitle: 'Case S26-12555 · Shah, Priya',
+    timestamp: '3 hr ago',
+    variant: 'success',
+  },
+];
 
 export function AppShell() {
   const year = new Date().getFullYear();
   const { presets, activePresetId, setActivePresetId } = useDemoPreset();
+
+  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  const unreadCount = hasOpened ? 0 : notifications.length;
+
+  function openPanel() {
+    setPanelOpen(true);
+    setHasOpened(true);
+  }
+
   return (
     <div className="min-h-full flex flex-col bg-arkana-gray-50">
       <header className="sticky top-0 z-10 bg-white border-b border-arkana-gray-200 h-14 sm:h-16 flex items-center px-3 sm:px-4 md:px-6 xl:px-8 justify-between gap-2 sm:gap-3">
@@ -40,7 +87,8 @@ export function AppShell() {
             </label>
           )}
           <button
-            aria-label="Notifications"
+            aria-label={`Notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
+            onClick={openPanel}
             className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-arkana-gray-50 flex items-center justify-center text-arkana-gray-500 transition shrink-0"
           >
             <svg
@@ -57,7 +105,9 @@ export function AppShell() {
               <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
               <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
             </svg>
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-arkana-red" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-arkana-red" />
+            )}
           </button>
           <div
             className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-arkana-black text-white flex items-center justify-center text-xs sm:text-sm font-bold shrink-0"
@@ -85,6 +135,15 @@ export function AppShell() {
           </div>
         </div>
       </footer>
+      <NotificationsPanel
+        open={panelOpen}
+        notifications={notifications}
+        onClose={() => setPanelOpen(false)}
+        onDismiss={(id) =>
+          setNotifications((prev) => prev.filter((n) => n.id !== id))
+        }
+        onClearAll={() => setNotifications([])}
+      />
     </div>
   );
 }
