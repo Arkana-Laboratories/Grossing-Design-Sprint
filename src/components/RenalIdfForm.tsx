@@ -18,7 +18,6 @@ import {
   RENAL_BOTTLE_QA_FINDINGS,
 } from '../templates/renalIdf';
 import type { Case, Preservative } from '../mock/types';
-import { totalPiecesFromMeasurements } from '../lib/parseDictation';
 import { parse, serialize, totalCount } from '../lib/measurements';
 import { MeasurementList } from './MeasurementList';
 import {
