@@ -1,0 +1,4 @@
+- [Grossing Design Sprint — project context](project_grossing_design_sprint.md) — what this prototype is, two-page editable/readonly split, snapshot independence, bottle-centric rewrite.
+- [Verify before declaring done](feedback_verify_before_done.md) — read composed components for internal labels before adding wrappers; tsc + walkthrough before reporting.
+- [Prefer data-driven config over hardcoded literals](feedback_data_driven_config.md) — bottle types, finding chips, panel summaries belong in `src/templates/`, not in component JSX.
+- [IDF system — key files](reference_idf_files.md) — pointers to templates, measurement lib, form, snapshot, readonly views.

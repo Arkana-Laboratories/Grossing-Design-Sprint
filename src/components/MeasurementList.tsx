@@ -4,11 +4,14 @@ import {
   serialize,
   formatMeasurement,
   totalCount,
+  hasThinDimension,
   exact,
   range,
   type DimRange,
   type Measurement,
 } from '../lib/measurements';
+import { DescriptorChips } from './DescriptorChips';
+import type { TissueDescriptor } from '../templates/descriptors';
 
 interface Props {
   value: string;
@@ -17,7 +20,6 @@ interface Props {
   fragmentNoun?: string;
 }
 
-const DIM_LABELS = ['L', 'W', 'D'];
 const EMPTY_TRIPLE = ['', '', ''] as [string, string, string];
 
 // When a single Add entry has this many pieces or more, the L (length)
@@ -45,6 +47,20 @@ export function MeasurementList({
 
   function handleRemove(idx: number) {
     onChange(serialize(measurements.filter((_, i) => i !== idx)));
+  }
+
+  function toggleDescriptorAt(idx: number, descriptor: TissueDescriptor) {
+    const m = measurements[idx];
+    if (!m) return;
+    const has = m.descriptors.includes(descriptor);
+    const next: Measurement = {
+      ...m,
+      descriptors: has
+        ? m.descriptors.filter((d) => d !== descriptor)
+        : [...m.descriptors, descriptor],
+    };
+    const updated = measurements.map((mm, i) => (i === idx ? next : mm));
+    onChange(serialize(updated));
   }
 
   function resetDraft() {
@@ -98,9 +114,12 @@ export function MeasurementList({
       lengthDim = exact(lMin);
     }
 
+    const dims: DimRange[] = [lengthDim, exact(wVal), exact(dVal)];
+    const isThin = hasThinDimension({ count: countNum, dimensions: dims, descriptors: [] });
     const next: Measurement = {
       count: countNum,
-      dimensions: [lengthDim, exact(wVal), exact(dVal)],
+      dimensions: dims,
+      descriptors: isThin ? ['thin'] : [],
     };
     onChange(serialize([...measurements, next]));
     resetDraft();
@@ -159,7 +178,6 @@ export function MeasurementList({
               @
             </span>
 
-            {/* Length — exact below threshold, range at threshold or above */}
             <input
               type="number"
               step="0.01"
@@ -189,7 +207,6 @@ export function MeasurementList({
             )}
             <span className="text-arkana-gray-500 text-sm" aria-hidden>x</span>
 
-            {/* Width — always exact */}
             <input
               type="number"
               step="0.01"
@@ -202,7 +219,6 @@ export function MeasurementList({
             />
             <span className="text-arkana-gray-500 text-sm" aria-hidden>x</span>
 
-            {/* Depth — always exact */}
             <input
               type="number"
               step="0.01"
@@ -250,24 +266,33 @@ export function MeasurementList({
           No measurements yet — dictate or add manually.
         </p>
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           {measurements.map((m, idx) => (
-            <span
+            <div
               key={idx}
-              className="inline-flex items-center gap-1 pl-3 pr-1 h-8 rounded-full bg-arkana-gray-50 border border-arkana-gray-200 text-sm text-arkana-black"
+              className="grid grid-cols-1 md:grid-cols-[minmax(0,260px)_1fr] gap-3 md:gap-4 items-start"
             >
-              <span className="font-medium tabular-nums">
-                {formatMeasurement(m)}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleRemove(idx)}
-                className="ml-0.5 w-6 h-6 rounded-full text-arkana-gray-500 hover:text-arkana-red hover:bg-arkana-red-light flex items-center justify-center text-lg leading-none transition"
-                aria-label="Remove measurement"
-              >
-                ×
-              </button>
-            </span>
+              <div className="flex items-center">
+                <span className="inline-flex items-center gap-1 pl-3 pr-1 h-8 rounded-full bg-arkana-gray-50 border border-arkana-gray-200 text-sm text-arkana-black w-full">
+                  <span className="font-medium tabular-nums flex-1 truncate">
+                    {formatMeasurement(m)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(idx)}
+                    className="ml-0.5 w-6 h-6 rounded-full text-arkana-gray-500 hover:text-arkana-red hover:bg-arkana-red-light flex items-center justify-center text-lg leading-none transition shrink-0"
+                    aria-label="Remove measurement"
+                  >
+                    ×
+                  </button>
+                </span>
+              </div>
+              <DescriptorChips
+                selected={m.descriptors as TissueDescriptor[]}
+                onToggle={(v) => toggleDescriptorAt(idx, v)}
+                hideLabel
+              />
+            </div>
           ))}
         </div>
       )}

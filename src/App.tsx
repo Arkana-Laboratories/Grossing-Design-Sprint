@@ -11,6 +11,7 @@ import { AccessionLogs } from './routes/AccessionLogs';
 import { CaseDetail } from './routes/CaseDetail';
 import { Verify } from './routes/Verify';
 import { Grossing } from './routes/Grossing';
+import { GrossingView } from './routes/GrossingView';
 import { CaseSummary } from './routes/CaseSummary';
 import { EmFinal } from './routes/EmFinal';
 
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/case/:accessionNumber" element={<CaseDetail />} />
                 <Route path="/case/:accessionNumber/verify" element={<Verify />} />
                 <Route path="/case/:accessionNumber/gross" element={<Grossing />} />
+                <Route path="/case/:accessionNumber/gross/view" element={<GrossingView />} />
                 <Route path="/case/:accessionNumber/summary" element={<CaseSummary />} />
                 <Route path="/case/:accessionNumber/em-final" element={<EmFinal />} />
                 <Route path="*" element={<PlaceholderRoute />} />

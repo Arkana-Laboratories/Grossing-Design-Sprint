@@ -6,14 +6,17 @@ import {
 interface Props {
   selected: TissueDescriptor[];
   onToggle: (value: TissueDescriptor) => void;
+  hideLabel?: boolean;
 }
 
-export function DescriptorChips({ selected, onToggle }: Props) {
+export function DescriptorChips({ selected, onToggle, hideLabel = false }: Props) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
-        Descriptors
-      </label>
+      {!hideLabel && (
+        <label className="block text-xs uppercase tracking-wide font-bold text-arkana-gray-500 mb-2">
+          Descriptors
+        </label>
+      )}
       <div className="flex flex-wrap gap-1.5">
         {TISSUE_DESCRIPTORS.map((d) => {
           const isSelected = selected.includes(d.value);

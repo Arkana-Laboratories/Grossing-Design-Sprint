@@ -72,6 +72,113 @@ export interface BottleCounts {
   glutaraldehyde: number;
 }
 
+export type RenalBottleQaField =
+  | 'damagedItems'
+  | 'materialsNotLabeled'
+  | 'foreignBottle'
+  | 'noTissueInBottle'
+  | 'bottleLeaked';
+
+export interface RenalBottleQaFinding {
+  label: string;
+  field: RenalBottleQaField;
+}
+
+export const RENAL_BOTTLE_QA_FINDINGS: RenalBottleQaFinding[] = [
+  { label: 'Damaged', field: 'damagedItems' },
+  { label: 'Not Labeled', field: 'materialsNotLabeled' },
+  { label: 'Foreign Bottle', field: 'foreignBottle' },
+  { label: 'No Tissue', field: 'noTissueInBottle' },
+  { label: 'Leaked', field: 'bottleLeaked' },
+];
+
+export interface RenalRoutedTile {
+  procedureKey: RenalProcedureKey;
+  title: string;
+  subtitle: string;
+  // 'pieces' renders a number input bound to procedure.pieces with a unit caption.
+  // 'none' renders the title + subtitle only (panel summary).
+  inputKind: 'none' | 'pieces';
+  unitSingular?: string;
+  unitPlural?: string;
+}
+
+export interface RenalBottleDefinition {
+  key: keyof BottleCounts;
+  label: string;
+  fragmentSingular: string;
+  fragmentPlural: string;
+  itemKey: string;
+  primaryProcedureKey: RenalProcedureKey;
+  routedTiles: RenalRoutedTile[];
+  isDefault: boolean;
+  isRenameable: boolean;
+}
+
+export const RENAL_BOTTLE_DEFINITIONS: RenalBottleDefinition[] = [
+  {
+    key: 'formalin',
+    label: 'Formalin',
+    fragmentSingular: 'piece',
+    fragmentPlural: 'pieces',
+    itemKey: 'formalin_bottle',
+    primaryProcedureKey: 'lightMicroscopy',
+    routedTiles: [
+      {
+        procedureKey: 'lightMicroscopy',
+        title: 'Light Microscopy',
+        subtitle: 'Kidney Biopsy, Level IV — H&E×2, PAS×2, Silver, SMMT, Trichrome',
+        inputKind: 'none',
+      },
+      {
+        procedureKey: 'electronMicroscopy',
+        title: 'Electron Microscopy',
+        subtitle: 'Ends submitted from formalin core',
+        inputKind: 'pieces',
+        unitSingular: 'end',
+        unitPlural: 'ends',
+      },
+    ],
+    isDefault: true,
+    isRenameable: false,
+  },
+  {
+    key: 'michels',
+    label: "Michel's",
+    fragmentSingular: 'piece',
+    fragmentPlural: 'pieces',
+    itemKey: 'michels_bottle',
+    primaryProcedureKey: 'immunofluorescence',
+    routedTiles: [
+      {
+        procedureKey: 'immunofluorescence',
+        title: 'Immunofluorescence Profile',
+        subtitle: '×9 — IgA, IgG, IgM, C3, C1Q, Albumin, Fibrinogen, Kappa, Lambda',
+        inputKind: 'none',
+      },
+    ],
+    isDefault: true,
+    isRenameable: false,
+  },
+  {
+    key: 'glutaraldehyde',
+    label: 'Glutaraldehyde',
+    fragmentSingular: 'end',
+    fragmentPlural: 'ends',
+    itemKey: 'glutaraldehyde_bottle',
+    primaryProcedureKey: 'electronMicroscopy',
+    routedTiles: [],
+    isDefault: false,
+    isRenameable: true,
+  },
+];
+
+export function getRenalBottleDefinition(key: keyof BottleCounts): RenalBottleDefinition {
+  const def = RENAL_BOTTLE_DEFINITIONS.find((b) => b.key === key);
+  if (!def) throw new Error(`Unknown bottle key: ${key}`);
+  return def;
+}
+
 export interface RenalIdfState {
   panelType: 'renal';
   bottleCounts: BottleCounts;

@@ -60,7 +60,7 @@ const NEURO_PRESETS = [
 export function NeuroIdfForm({ caseData, idf }: Props) {
   const navigate = useNavigate();
   const toast = useToast();
-  const { updateNeuro, resetIdf } = useCaseSession();
+  const { updateNeuro, resetIdf, submitIdf } = useCaseSession();
 
   const presets = useMemo(() => NEURO_PRESETS, []);
   const activePreset = useRegisterDemoPresets(presets) ?? NEURO_PRESETS[0]!;
@@ -156,6 +156,7 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
       toast({ message: validationErrors[0]!, variant: 'warning' });
       return;
     }
+    submitIdf();
     toast({ message: 'IDF submitted to TX queue', variant: 'success' });
     navigate(`/case/${caseData.accessionNumber}/summary`);
   }

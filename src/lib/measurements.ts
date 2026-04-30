@@ -5,9 +5,13 @@
 // operation to a single non-branching path.
 //
 // Storage string format (round-trip stable):
-//   1@2.8×0.1×0.1               — all dims exact
-//   2@0.1-0.3×0.4-0.7×0.1       — mixed: any dim can be "min-max"
-//   2@0.1-0.3×0.1×0.05          — partial: only some dims ranged
+//   1@2.8×0.1×0.1                 — all dims exact, no descriptors
+//   2@0.1-0.3×0.4-0.7×0.1         — mixed: any dim can be "min-max"
+//   2@0.1-0.3×0.1×0.05            — partial: only some dims ranged
+//   1@2.8×0.1×0.1[tan,fatty]      — per-row descriptors appended in [...]
+//
+// Multi-measurement strings are joined with ", ". The parser is bracket-aware
+// so commas inside [...] do not split rows.
 
 export interface DimRange {
   min: number;
@@ -17,6 +21,7 @@ export interface DimRange {
 export interface Measurement {
   count: number;
   dimensions: DimRange[];
+  descriptors: string[];
 }
 
 // ─── Construction ────────────────────────────────────────────────────────────
@@ -53,7 +58,17 @@ export function parseDim(text: string): DimRange | null {
 }
 
 function parseSegment(seg: string): Measurement | null {
-  const m = seg.match(/^(\d+(?:\.\d+)?)@(.+)$/);
+  let descriptors: string[] = [];
+  let core = seg.trim();
+  const descMatch = core.match(/\[([^\]]*)\]\s*$/);
+  if (descMatch) {
+    descriptors = descMatch[1]!
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    core = core.slice(0, descMatch.index).trim();
+  }
+  const m = core.match(/^(\d+(?:\.\d+)?)@(.+)$/);
   if (!m) return null;
   const count = Number(m[1]);
   if (!Number.isFinite(count) || count < 1) return null;
@@ -65,13 +80,35 @@ function parseSegment(seg: string): Measurement | null {
     if (!d) return null;
     dimensions.push(d);
   }
-  return { count, dimensions };
+  return { count, dimensions, descriptors };
+}
+
+// Bracket-aware split: commas inside [...] are not row separators. Also
+// tolerates ";" as a separator for forward-compatibility.
+function splitSegments(stored: string): string[] {
+  const out: string[] = [];
+  let buf = '';
+  let depth = 0;
+  for (const ch of stored) {
+    if (ch === '[') depth++;
+    else if (ch === ']') depth = Math.max(0, depth - 1);
+    if (depth === 0 && (ch === ',' || ch === ';')) {
+      const t = buf.trim();
+      if (t) out.push(t);
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  const t = buf.trim();
+  if (t) out.push(t);
+  return out;
 }
 
 export function parse(stored: string): Measurement[] {
   if (!stored.trim()) return [];
   const out: Measurement[] = [];
-  for (const seg of stored.split(',').map((s) => s.trim()).filter(Boolean)) {
+  for (const seg of splitSegments(stored)) {
     const m = parseSegment(seg);
     if (m) out.push(m);
   }
@@ -83,7 +120,8 @@ function serializeDim(d: DimRange): string {
 }
 
 export function serializeMeasurement(m: Measurement): string {
-  return `${m.count}@${m.dimensions.map(serializeDim).join('×')}`;
+  const base = `${m.count}@${m.dimensions.map(serializeDim).join('×')}`;
+  return m.descriptors.length > 0 ? `${base}[${m.descriptors.join(',')}]` : base;
 }
 
 export function serialize(measurements: Measurement[]): string {

@@ -14,7 +14,12 @@ import {
   getNeuroTissueCategoryLabel,
 } from '../templates/neuroIdf';
 import type { Case } from '../mock/types';
-import { getDescriptorLabel } from '../templates/descriptors';
+import { getDescriptorLabel, type TissueDescriptor } from '../templates/descriptors';
+import { parse, formatMeasurement } from '../lib/measurements';
+
+function pluralizeUnit(n: number, singular: string): string {
+  return n === 1 ? singular : `${singular}s`;
+}
 
 export function SummaryRow({
   label,
@@ -82,21 +87,47 @@ export function RenalReadonlyView({
                 className="border-t border-arkana-gray-200 pt-3 first:border-0 first:pt-0"
               >
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="text-arkana-black font-medium">{row.label}</div>
-                  <div className="flex items-center gap-2">
-                    {s.isPif && (
-                      <Tag variant="danger">
-                        PIF{s.pifReason ? ` · ${s.pifReason}` : ''}
-                      </Tag>
-                    )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-arkana-black font-medium">{row.label}</span>
                     <span className="text-xs text-arkana-gray-500">
-                      {s.pieces ? `${s.pieces} pcs` : '—'}
+                      {s.pieces
+                        ? `· ${s.pieces} ${pluralizeUnit(s.pieces, row.key === 'electronMicroscopy' ? 'end' : 'piece')}`
+                        : '· —'}
                     </span>
                   </div>
+                  {s.isPif && (
+                    <Tag variant="danger">
+                      PIF{s.pifReason ? ` · ${s.pifReason}` : ''}
+                    </Tag>
+                  )}
                 </div>
-                <div className="text-sm text-arkana-black mt-0.5 font-mono tabular-nums">
-                  {s.size || '—'}
-                </div>
+                {(() => {
+                  const ms = parse(s.size);
+                  if (ms.length === 0) return <p className="text-sm text-arkana-gray-500 mt-0.5">—</p>;
+                  return (
+                    <div className="space-y-1.5 mt-1.5">
+                      {ms.map((m, idx) => (
+                        <div
+                          key={idx}
+                          className="grid grid-cols-1 md:grid-cols-[minmax(0,220px)_1fr] gap-2 md:gap-3 items-start"
+                        >
+                          <span className="text-sm text-arkana-black font-mono tabular-nums">
+                            {formatMeasurement(m)}
+                          </span>
+                          {m.descriptors.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {m.descriptors.map((d) => (
+                                <Tag key={d} variant="info">
+                                  {getDescriptorLabel(d as TissueDescriptor)}
+                                </Tag>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
                 {s.descriptors.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {s.descriptors.map((d) => (

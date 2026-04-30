@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { PanelType } from '../mock/types';
 import {
   type RenalIdfState,
@@ -23,6 +23,20 @@ export type CaseSession =
       idf: NeuroIdfState;
     };
 
+export type SubmittedIdf =
+  | {
+      accessionNumber: string;
+      panelType: 'renal';
+      idf: RenalIdfState;
+      submittedAt: string;
+    }
+  | {
+      accessionNumber: string;
+      panelType: 'neuro';
+      idf: NeuroIdfState;
+      submittedAt: string;
+    };
+
 interface ContextValue {
   session: CaseSession | null;
   startSession: (accessionNumber: string, panelType: PanelType) => void;
@@ -30,12 +44,42 @@ interface ContextValue {
   updateNeuro: (updater: (current: NeuroIdfState) => NeuroIdfState) => void;
   resetIdf: () => void;
   clearSession: () => void;
+  submitIdf: () => void;
+  getSubmittedIdf: (accessionNumber: string) => SubmittedIdf | undefined;
 }
 
 const CaseSessionContext = createContext<ContextValue | null>(null);
 
+const SUBMITTED_KEY = 'cortex.submittedIdfs';
+
+function loadSubmitted(): Record<string, SubmittedIdf> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(SUBMITTED_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, SubmittedIdf>;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function cloneIdf<T>(idf: T): T {
+  return JSON.parse(JSON.stringify(idf)) as T;
+}
+
 export function CaseSessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<CaseSession | null>(null);
+  const [submittedIdfs, setSubmittedIdfs] = useState<Record<string, SubmittedIdf>>(() => loadSubmitted());
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(SUBMITTED_KEY, JSON.stringify(submittedIdfs));
+    } catch {
+      // ignore storage errors (quota, private mode, etc.)
+    }
+  }, [submittedIdfs]);
 
   const startSession = useCallback((accessionNumber: string, panelType: PanelType) => {
     if (panelType === 'renal') {
@@ -77,9 +121,46 @@ export function CaseSessionProvider({ children }: { children: ReactNode }) {
 
   const clearSession = useCallback(() => setSession(null), []);
 
+  const submitIdf = useCallback(() => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      const submittedAt = new Date().toISOString();
+      const snapshot: SubmittedIdf =
+        prev.panelType === 'renal'
+          ? {
+              accessionNumber: prev.accessionNumber,
+              panelType: 'renal',
+              idf: cloneIdf(prev.idf),
+              submittedAt,
+            }
+          : {
+              accessionNumber: prev.accessionNumber,
+              panelType: 'neuro',
+              idf: cloneIdf(prev.idf),
+              submittedAt,
+            };
+      setSubmittedIdfs((map) => ({ ...map, [prev.accessionNumber]: snapshot }));
+      return prev;
+    });
+  }, []);
+
+  const getSubmittedIdf = useCallback(
+    (accessionNumber: string) => submittedIdfs[accessionNumber],
+    [submittedIdfs],
+  );
+
   return (
     <CaseSessionContext.Provider
-      value={{ session, startSession, updateRenal, updateNeuro, resetIdf, clearSession }}
+      value={{
+        session,
+        startSession,
+        updateRenal,
+        updateNeuro,
+        resetIdf,
+        clearSession,
+        submitIdf,
+        getSubmittedIdf,
+      }}
     >
       {children}
     </CaseSessionContext.Provider>
