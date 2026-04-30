@@ -14,8 +14,10 @@ import {
   type RenalPreAnalyticalQa,
   type RenalBottleDefinition,
   type RenalBottleQaField,
+  type NoEmReason,
   RENAL_BOTTLE_DEFINITIONS,
   RENAL_BOTTLE_QA_FINDINGS,
+  NO_EM_REASONS,
 } from '../templates/renalIdf';
 import type { Case, Preservative } from '../mock/types';
 import { totalPiecesFromMeasurements } from '../lib/parseDictation';
@@ -38,7 +40,9 @@ interface RenalPreset {
   transcript: string;
   displayTranscript?: string;
   bottles: Preservative[];
-  procedurePatch?: Partial<Record<RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number }>>;
+  noEmReason?: NoEmReason | null;
+  noEmReasonOther?: string;
+  procedurePatch?: Partial<Record<RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number; size?: string }>>;
 }
 
 const RENAL_PRESETS: RenalPreset[] = [
@@ -47,25 +51,58 @@ const RENAL_PRESETS: RenalPreset[] = [
     label: 'Normal case',
     bottles: ['formalin', 'michels'],
     displayTranscript:
-      "Received in Michel's are 2 pieces of tissue, measuring 0.8 and 0.9 cm. The tissue appearance is tan.\n" +
-      "Received in Formalin are 3 pieces of tissue, measuring 0.5, 0.7, and 1.0 cm. The tissue appearance is tan.\n" +
-      "2 ends are submitted for EM processing.",
+      "Received in Michel's are 3 pieces of tissue, measuring 0.3, 0.7, & 1.2 cm. 1 piece is bloody and 1 piece is fatty/translucent, the last is 0.3 tan.\n\n" +
+      "Received in Formalin are 6 pieces of tissue, measuring between 0.1–1.7 cm. 1 piece was bisected. All pieces are tan in appearance.\n\n" +
+      "2 ends were submitted for EM.",
     transcript:
-      "michel's one at zero point eight by zero point one by zero point one comma one at zero point nine by zero point one by zero point one " +
-      "formalin one at zero point five by zero point one by zero point one comma one at zero point seven by zero point one by zero point one comma one at one point zero by zero point one by zero point one " +
-      "glute",
+      "michel's one at zero point three by zero point one by zero point one comma " +
+      "one at zero point seven by zero point one by zero point one comma " +
+      "one at one point two by zero point one by zero point one " +
+      "formalin five at zero point one to one point seven by zero point one by zero point one comma " +
+      "one at zero point eight by zero point one by zero point one",
     procedurePatch: {
-      lightMicroscopy: { descriptors: ['tan'] },
-      immunofluorescence: { descriptors: ['tan'] },
-      electronMicroscopy: { pieces: 2 },
+      immunofluorescence: {
+        size: '1@0.3×0.1×0.1[tan],1@0.7×0.1×0.1[bloody],1@1.2×0.1×0.1[fatty,translucent]',
+        pieces: 3,
+        descriptors: [],
+      },
+      lightMicroscopy: {
+        size: '6@0.1-1.7×0.1×0.1[tan,bisected]',
+        pieces: 7,
+        descriptors: [],
+      },
+      electronMicroscopy: {
+        size: '',
+        pieces: 2,
+        descriptors: [],
+      },
     },
   },
   {
     id: 'special-case',
     label: 'Special case',
     bottles: ['formalin'],
+    displayTranscript:
+      "Received in Michel's were 0 pieces.\n\n" +
+      "Received in Formalin were 3 pieces of tissue, measuring 0.4,0.9,&1.2 cm.  The tissue is tan & thin measuring less than 0.1X 0.1 in diameter.\n\n" +
+      "No ends were submitted to EM processing, due to insufficient tissue.",
     transcript:
-      'formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one',
+      "formalin one at zero point four by zero point one by zero point one comma " +
+      "one at zero point nine by zero point one by zero point one comma " +
+      "one at one point two by zero point one by zero point one",
+    noEmReason: 'Insufficient tissue',
+    procedurePatch: {
+      lightMicroscopy: {
+        size: '1@0.4×0.1×0.1[tan,thin],1@0.9×0.1×0.1[tan,thin],1@1.2×0.1×0.1[tan,thin]',
+        pieces: 3,
+        descriptors: [],
+      },
+      electronMicroscopy: {
+        size: '',
+        pieces: 0,
+        descriptors: [],
+      },
+    },
   },
 ];
 
@@ -96,7 +133,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         const parsed = parse(next.size);
         const base = totalCount(parsed);
         const bisectedExtra = key === 'lightMicroscopy'
-          ? parsed.filter((m) => m.descriptors.includes('bisected')).reduce((sum, m) => sum + m.count, 0)
+          ? parsed.filter((m) => m.descriptors.includes('bisected')).length
           : 0;
         next.pieces = base + bisectedExtra;
       }
@@ -108,11 +145,40 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   }
 
   function adjustBottleCount(key: keyof BottleCounts, delta: number) {
+    const newCount = Math.max(0, idf.bottleCounts[key] + delta);
+    if (newCount === 0 && delta < 0) {
+      const def = RENAL_BOTTLE_DEFINITIONS.find((d) => d.key === key);
+      if (def) {
+        const procSize = idf.procedures[def.primaryProcedureKey].size;
+        if (procSize !== '') {
+          const pieceCount = totalCount(parse(procSize));
+          const noun = pieceCount === 1 ? 'piece' : 'pieces';
+          const ok = window.confirm(
+            `Setting this bottle to 0 will remove its ${pieceCount} ${noun} of measurements. Do you want to continue?`,
+          );
+          if (!ok) return;
+          updateRenal((current) => ({
+            ...current,
+            bottleCounts: { ...current.bottleCounts, [key]: 0 },
+            procedures: {
+              ...current.procedures,
+              [def.primaryProcedureKey]: {
+                ...current.procedures[def.primaryProcedureKey],
+                size: '',
+                pieces: 0,
+                descriptors: [],
+              },
+            },
+          }));
+          return;
+        }
+      }
+    }
     updateRenal((current) => ({
       ...current,
       bottleCounts: {
         ...current.bottleCounts,
-        [key]: Math.max(0, current.bottleCounts[key] + delta),
+        [key]: newCount,
       },
     }));
   }
@@ -182,15 +248,15 @@ export function RenalIdfForm({ caseData, idf }: Props) {
       next = {
         ...next,
         bottleCounts: {
-          formalin: activePreset.bottles.includes('formalin') ? 1 : next.bottleCounts.formalin,
-          michels: activePreset.bottles.includes('michels') ? 1 : next.bottleCounts.michels,
+          formalin: activePreset.bottles.includes('formalin') ? next.bottleCounts.formalin + 1 : next.bottleCounts.formalin,
+          michels: activePreset.bottles.includes('michels') ? next.bottleCounts.michels + 1 : next.bottleCounts.michels,
           glutaraldehyde: next.bottleCounts.glutaraldehyde,
         },
       };
 
       if (activePreset.procedurePatch) {
         const procedures = { ...next.procedures };
-        for (const [key, patch] of Object.entries(activePreset.procedurePatch) as [RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number }][]) {
+        for (const [key, patch] of Object.entries(activePreset.procedurePatch) as [RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number; size?: string }][]) {
           procedures[key] = { ...procedures[key], ...patch };
         }
         next = { ...next, procedures };
@@ -215,6 +281,13 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         };
       }
       next = { ...next, procedures: distributedProcedures };
+
+      if (activePreset.noEmReason !== undefined) {
+        next = { ...next, noEmReason: activePreset.noEmReason ?? null };
+      }
+      if (activePreset.noEmReasonOther !== undefined) {
+        next = { ...next, noEmReasonOther: activePreset.noEmReasonOther };
+      }
 
       return next;
     });
@@ -251,11 +324,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     }
   }
 
-  const validationErrors = collectRenalValidationErrors(
-    idf,
-    caseData,
-    activePreset.bottles,
-  );
+  const validationErrors = collectRenalValidationErrors(idf);
 
   function handleSubmit() {
     if (validationErrors.length > 0) {
@@ -305,7 +374,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         );
         const showParaffinIfTile = def.key === 'formalin' && michelsUnavailable && paraffinIfAdded;
         const showParaffinIfPrompt = def.key === 'formalin' && michelsUnavailable && !paraffinIfAdded;
-        const hideRoutedTiles = def.key === 'michels' && idf.bottleCounts.michels === 0;
+        const hideRoutedTiles = idf.bottleCounts[def.key] === 0;
         return (
           <BottleCard
             key={def.key}
@@ -333,9 +402,31 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                     {tile.inputKind === 'pieces' && (
                       <PiecesInput
                         value={idf.procedures[tile.procedureKey].pieces}
-                        onChange={(v) => patchProcedure(tile.procedureKey, { pieces: Math.max(0, v) })}
+                        onChange={(v) => {
+                          const next = Math.max(0, v);
+                          patchProcedure(tile.procedureKey, { pieces: next });
+                          if (tile.procedureKey === 'electronMicroscopy' && next > 0) {
+                            updateRenal((current) => ({ ...current, noEmReason: null, noEmReasonOther: '' }));
+                          }
+                        }}
                         unitSingular={tile.unitSingular ?? 'piece'}
                         unitPlural={tile.unitPlural ?? 'pieces'}
+                      />
+                    )}
+                    {tile.procedureKey === 'electronMicroscopy' && idf.procedures.electronMicroscopy.pieces === 0 && (
+                      <EmReasonSelector
+                        reason={idf.noEmReason}
+                        otherText={idf.noEmReasonOther}
+                        onReasonChange={(r) =>
+                          updateRenal((current) => ({
+                            ...current,
+                            noEmReason: r,
+                            noEmReasonOther: r !== 'Other' ? '' : current.noEmReasonOther,
+                          }))
+                        }
+                        onOtherTextChange={(t) =>
+                          updateRenal((current) => ({ ...current, noEmReasonOther: t }))
+                        }
                       />
                     )}
                   </PanelTile>
@@ -423,38 +514,74 @@ export function RenalIdfForm({ caseData, idf }: Props) {
 
 // ─── Validation ─────────────────────────────────────────────────────────────
 
-function collectRenalValidationErrors(
-  idf: RenalIdfState,
-  caseData: Case,
-  expectedBottles?: Preservative[],
-): string[] {
+function collectRenalValidationErrors(idf: RenalIdfState): string[] {
   const errors: string[] = [];
 
-  const preservatives = new Set<Preservative>(
-    expectedBottles && expectedBottles.length > 0
-      ? expectedBottles
-      : caseData.materials.map((m) => m.preservative),
-  );
-
-  const lmHas = parse(idf.procedures.lightMicroscopy.size).length > 0;
-  const ifHas = parse(idf.procedures.immunofluorescence.size).length > 0;
-  const emHas = parse(idf.procedures.electronMicroscopy.size).length > 0;
-
-  if (preservatives.has('formalin') && !lmHas) {
-    errors.push(
-      'Formalin bottle received — formalin card needs at least one measurement.',
-    );
+  for (const def of RENAL_BOTTLE_DEFINITIONS) {
+    if (idf.bottleCounts[def.key] > 0) {
+      const hasSize = parse(idf.procedures[def.primaryProcedureKey].size).length > 0;
+      const hasNoTissue = idf.preAnalyticalQa.noTissueInBottle.includes(def.itemKey);
+      if (!hasSize && !hasNoTissue) {
+        errors.push(`${def.label}: add at least one measurement or mark "No Tissue".`);
+      }
+    }
   }
-  if (preservatives.has('michels') && !ifHas) {
-    errors.push(
-      "Michel's bottle received — Michel's card needs at least one measurement.",
-    );
-  }
-  if (errors.length === 0 && preservatives.size === 0 && !lmHas && !ifHas && !emHas) {
-    errors.push('At least one bottle card needs a measurement.');
+
+  const formalinActive =
+    idf.bottleCounts.formalin > 0 &&
+    !idf.preAnalyticalQa.noTissueInBottle.includes('formalin_bottle');
+
+  if (formalinActive && idf.procedures.electronMicroscopy.pieces === 0) {
+    if (!idf.noEmReason) {
+      errors.push('EM: 0 ends submitted — select a reason.');
+    } else if (idf.noEmReason === 'Other' && !idf.noEmReasonOther.trim()) {
+      errors.push('EM: provide a reason in the "Other" field.');
+    }
   }
 
   return errors;
+}
+
+// ─── EM Reason Selector ──────────────────────────────────────────────────────
+
+interface EmReasonSelectorProps {
+  reason: NoEmReason | null;
+  otherText: string;
+  onReasonChange: (r: NoEmReason) => void;
+  onOtherTextChange: (t: string) => void;
+}
+
+function EmReasonSelector({ reason, otherText, onReasonChange, onOtherTextChange }: EmReasonSelectorProps) {
+  return (
+    <div className="mt-2 space-y-2">
+      <p className="text-xs text-arkana-gray-500">Reason for 0 ends:</p>
+      <div className="flex flex-wrap gap-1.5">
+        {NO_EM_REASONS.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => onReasonChange(r)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${
+              reason === r
+                ? 'bg-arkana-red text-white border-arkana-red'
+                : 'border-arkana-gray-200 text-arkana-gray-500 hover:border-arkana-red hover:text-arkana-red'
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+      {reason === 'Other' && (
+        <input
+          type="text"
+          value={otherText}
+          onChange={(e) => onOtherTextChange(e.target.value)}
+          placeholder="Describe reason…"
+          className="w-full px-2.5 py-1.5 rounded-lg border border-arkana-gray-200 text-xs focus:outline-none focus:border-arkana-red"
+        />
+      )}
+    </div>
+  );
 }
 
 // ─── Bottle Card ────────────────────────────────────────────────────────────

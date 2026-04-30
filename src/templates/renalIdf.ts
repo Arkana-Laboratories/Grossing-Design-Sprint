@@ -66,6 +66,14 @@ export const PIF_REASONS = [
 
 export type PifReason = (typeof PIF_REASONS)[number];
 
+export const NO_EM_REASONS = [
+  'Insufficient tissue',
+  'No visible GLOMs',
+  'Other',
+] as const;
+
+export type NoEmReason = (typeof NO_EM_REASONS)[number];
+
 export interface BottleCounts {
   formalin: number;
   michels: number;
@@ -189,6 +197,8 @@ export interface RenalIdfState {
   procedures: Record<RenalProcedureKey, RenalProcedureRowState>;
   preAnalyticalQa: RenalPreAnalyticalQa;
   comments: string;
+  noEmReason: NoEmReason | null;
+  noEmReasonOther: string;
 }
 
 export function createEmptyRenalIdf(): RenalIdfState {
@@ -213,8 +223,10 @@ export function createEmptyRenalIdf(): RenalIdfState {
   };
   return {
     panelType: 'renal',
-    bottleCounts: { formalin: 1, michels: 1, glutaraldehyde: 0 },
+    bottleCounts: { formalin: 0, michels: 0, glutaraldehyde: 0 },
     procedures,
+    noEmReason: null,
+    noEmReasonOther: '',
     preAnalyticalQa: {
       damagedItems: [],
       materialsNotLabeled: [],
