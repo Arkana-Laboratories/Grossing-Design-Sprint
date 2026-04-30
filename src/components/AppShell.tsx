@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { ArkanaLogo } from './brand/ArkanaLogo';
-import { useDemoPreset } from '../state/DemoPresetContext';
 import {
   NotificationsPanel,
   type Notification,
@@ -40,8 +39,6 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 
 export function AppShell() {
   const year = new Date().getFullYear();
-  const { presets, activePresetId, setActivePresetId } = useDemoPreset();
-
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const [panelOpen, setPanelOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
@@ -68,19 +65,6 @@ export function AppShell() {
           </span>
         </Link>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
-          {presets.length > 0 && (
-            <select
-              value={activePresetId ?? ''}
-              onChange={(e) => setActivePresetId(e.target.value)}
-              className="h-8 w-28 sm:w-32 rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
-            >
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          )}
           <button
             aria-label={`Notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
             onClick={openPanel}

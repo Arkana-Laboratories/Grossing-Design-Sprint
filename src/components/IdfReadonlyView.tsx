@@ -100,6 +100,13 @@ export function RenalReadonlyView({
                       PIF{s.pifReason ? ` · ${s.pifReason}` : ''}
                     </Tag>
                   )}
+                  {row.key === 'electronMicroscopy' && s.pieces === 0 && idf.noEmReason && (
+                    <Tag variant="warning">
+                      No ends · {idf.noEmReason === 'Other' && idf.noEmReasonOther
+                        ? idf.noEmReasonOther
+                        : idf.noEmReason}
+                    </Tag>
+                  )}
                 </div>
                 {(() => {
                   const ms = parse(s.size);

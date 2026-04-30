@@ -252,6 +252,39 @@ export const mockCases: Case[] = [
     specialOrders: [],
   },
 
+  // ─── Special demo case ────────────────────────────────────────────────────
+  {
+    id: 'case-special-demo',
+    accessionNumber: 'S26-12345',
+    caseType: 'Surgical',
+    panelType: 'renal',
+    specimenCategory: 'native_kidney',
+    patient: { id: 'pat-sd', medicalRecordNumber: 'MRN-12345', firstName: 'Lacy', lastName: 'White', dateOfBirth: '1942-07-16' },
+    receivedAt: '2026-04-30T09:00:00',
+    materials: [formalin('mat-sd-a'), michels('mat-sd-b')],
+    panels: { numberOfCores: 3, lymphNodeCount: 0, immunofluorescenceCount: 0 },
+    flags: [],
+    status: 'intake',
+    specialOrders: [],
+  },
+
+  // ─── Native demo case ─────────────────────────────────────────────────────
+  {
+    id: 'case-native-demo',
+    accessionNumber: 'S26-10234',
+    caseType: 'Surgical',
+    panelType: 'renal',
+    specimenCategory: 'native_kidney',
+    patient: { id: 'pat-nd', medicalRecordNumber: 'MRN-10234', firstName: 'Brian', lastName: 'Smith', dateOfBirth: '1984-02-02' },
+    receivedAt: '2026-04-30T09:00:00',
+    submittingState: 'AR',
+    materials: [formalin('mat-nd-a'), michels('mat-nd-b')],
+    panels: { numberOfCores: 3, lymphNodeCount: 0, immunofluorescenceCount: 1 },
+    flags: [],
+    status: 'intake',
+    specialOrders: [],
+  },
+
   // ─── Neuro: Brain Autopsy ─────────────────────────────────────────────────────
   // Scenario: brain autopsy in_grossing — multi-specimen scenario.
   {

@@ -36,7 +36,7 @@ const CATEGORY_LABEL: Record<EventCategory, string> = {
 
 interface LogEntry {
   id: string;
-  timestamp: string;
+  at: string; // ISO datetime, e.g. "2026-04-30T11:42:00"
   accessionNumber: string;
   patient: string;
   caseType: string;
@@ -47,25 +47,42 @@ interface LogEntry {
   tags?: AccessionTagKey[];
 }
 
-// Sort key for the human-readable timestamp strings. "Yesterday X" sorts
-// before any "today X". Bigger number = more recent.
-function timestampSortKey(ts: string): number {
-  const isYesterday = ts.startsWith('Yesterday ');
-  const timePart = isYesterday ? ts.slice('Yesterday '.length) : ts;
-  const m = timePart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!m) return Number.NEGATIVE_INFINITY;
-  let hour = parseInt(m[1]!, 10);
-  const minute = parseInt(m[2]!, 10);
-  if (hour === 12) hour = 0;
-  if (m[3]!.toUpperCase() === 'PM') hour += 12;
-  const minutesInDay = hour * 60 + minute;
-  return (isYesterday ? -10000 : 0) + minutesInDay;
+// Demo's "today" anchor. Keeps the date filter default and the
+// "Yesterday / today" display labels stable regardless of when the
+// demo is run.
+const DEMO_TODAY_YMD = '2026-04-30';
+
+function dateToYmd(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function entryYmd(entry: LogEntry): string {
+  return entry.at.slice(0, 10);
+}
+
+function formatTimestampForDisplay(at: string): string {
+  const d = new Date(at);
+  const ymd = at.slice(0, 10);
+  const today = new Date(`${DEMO_TODAY_YMD}T00:00:00`);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const yesterdayYmd = dateToYmd(yesterday);
+
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (ymd === DEMO_TODAY_YMD) return time;
+  if (ymd === yesterdayYmd) return `Yesterday ${time}`;
+  const month = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${month}, ${time}`;
 }
 
 const logEntries: LogEntry[] = [
+  // ─── Apr 30 (today) ────────────────────────────────────────────────
   {
     id: 'log-1',
-    timestamp: '11:42 AM',
+    at: '2026-04-30T11:42:00',
     accessionNumber: 'S26-12500',
     patient: 'Jane Doe',
     caseType: 'Surgical',
@@ -77,7 +94,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-2',
-    timestamp: '11:42 AM',
+    at: '2026-04-30T11:42:00',
     accessionNumber: 'S26-12500',
     patient: 'Jane Doe',
     caseType: 'Surgical',
@@ -89,7 +106,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-3',
-    timestamp: '11:18 AM',
+    at: '2026-04-30T11:18:00',
     accessionNumber: 'S26-12533',
     patient: 'Maria Lopez',
     caseType: 'Consult Muscle',
@@ -101,7 +118,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-4',
-    timestamp: '10:55 AM',
+    at: '2026-04-30T10:55:00',
     accessionNumber: 'S26-12555',
     patient: 'Priya Shah',
     caseType: 'Surgical',
@@ -113,7 +130,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-5',
-    timestamp: '10:30 AM',
+    at: '2026-04-30T10:30:00',
     accessionNumber: 'S26-12555',
     patient: 'Priya Shah',
     caseType: 'Surgical',
@@ -125,7 +142,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-6',
-    timestamp: '09:48 AM',
+    at: '2026-04-30T09:48:00',
     accessionNumber: 'S26-12533',
     patient: 'Maria Lopez',
     caseType: 'Consult Muscle',
@@ -135,34 +152,8 @@ const logEntries: LogEntry[] = [
     user: 'JD',
   },
   {
-    id: 'log-7',
-    timestamp: 'Yesterday 4:12 PM',
-    accessionNumber: 'S26-12476',
-    patient: 'Robert Singh',
-    caseType: 'Surgical Transplant',
-    event: 'CR requested — age change',
-    category: 'flag',
-    variant: 'warning',
-    user: 'MS',
-    tags: ['tx'],
-  },
-  {
-    id: 'log-8',
-    timestamp: 'Yesterday 2:02 PM',
-    accessionNumber: 'S26-12476',
-    patient: 'Robert Singh',
-    caseType: 'Surgical Transplant',
-    event: 'Case finalized',
-    category: 'finalize',
-    variant: 'success',
-    user: 'MS',
-    tags: ['tx', 'special_stains'],
-  },
-
-  // ─── Additional filter coverage entries ──────────────────────────────────
-  {
     id: 'log-9',
-    timestamp: '12:25 PM',
+    at: '2026-04-30T12:25:00',
     accessionNumber: 'S26-12603',
     patient: 'Wei Chen',
     caseType: 'Surgical Transplant',
@@ -174,7 +165,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-10',
-    timestamp: '12:08 PM',
+    at: '2026-04-30T12:08:00',
     accessionNumber: 'S26-12604',
     patient: 'Michael Brown',
     caseType: 'Implantation',
@@ -186,7 +177,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-11',
-    timestamp: '11:50 AM',
+    at: '2026-04-30T11:50:00',
     accessionNumber: 'S26-12608',
     patient: 'Sofia Reyes',
     caseType: 'Conjunctiva',
@@ -198,7 +189,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-12',
-    timestamp: '11:22 AM',
+    at: '2026-04-30T11:22:00',
     accessionNumber: 'S26-12606',
     patient: 'James Patel',
     caseType: 'Surgical Heart',
@@ -210,7 +201,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-13',
-    timestamp: '10:48 AM',
+    at: '2026-04-30T10:48:00',
     accessionNumber: 'S26-12603',
     patient: 'Wei Chen',
     caseType: 'Surgical Transplant',
@@ -222,7 +213,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-14',
-    timestamp: '10:15 AM',
+    at: '2026-04-30T10:15:00',
     accessionNumber: 'S26-12604',
     patient: 'Michael Brown',
     caseType: 'Implantation',
@@ -234,7 +225,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-15',
-    timestamp: '09:42 AM',
+    at: '2026-04-30T09:42:00',
     accessionNumber: 'S26-12476',
     patient: 'Robert Singh',
     caseType: 'Surgical Transplant',
@@ -246,7 +237,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-16',
-    timestamp: '09:10 AM',
+    at: '2026-04-30T09:10:00',
     accessionNumber: 'S26-12555',
     patient: 'Priya Shah',
     caseType: 'Surgical',
@@ -258,7 +249,7 @@ const logEntries: LogEntry[] = [
   },
   {
     id: 'log-17',
-    timestamp: '08:35 AM',
+    at: '2026-04-30T08:35:00',
     accessionNumber: 'S26-12603',
     patient: 'Wei Chen',
     caseType: 'Surgical Transplant',
@@ -268,10 +259,223 @@ const logEntries: LogEntry[] = [
     user: 'MS',
     tags: ['tx', 'special_stains', 'congo_red'],
   },
+
+  // ─── Apr 29 (yesterday) ────────────────────────────────────────────
+  {
+    id: 'log-7',
+    at: '2026-04-29T16:12:00',
+    accessionNumber: 'S26-12476',
+    patient: 'Robert Singh',
+    caseType: 'Surgical Transplant',
+    event: 'CR requested — age change',
+    category: 'flag',
+    variant: 'warning',
+    user: 'MS',
+    tags: ['tx'],
+  },
+  {
+    id: 'log-8',
+    at: '2026-04-29T14:02:00',
+    accessionNumber: 'S26-12476',
+    patient: 'Robert Singh',
+    caseType: 'Surgical Transplant',
+    event: 'Case finalized',
+    category: 'finalize',
+    variant: 'success',
+    user: 'MS',
+    tags: ['tx', 'special_stains'],
+  },
+
+  // ─── Apr 28 ────────────────────────────────────────────────────────
+  {
+    id: 'log-18',
+    at: '2026-04-28T14:00:00',
+    accessionNumber: 'S26-12476',
+    patient: 'Robert Singh',
+    caseType: 'Surgical Transplant',
+    event: 'Materials received — TX biopsy',
+    category: 'intake',
+    variant: 'info',
+    user: 'MS',
+    tags: ['tx'],
+  },
+
+  // ─── Apr 27 ────────────────────────────────────────────────────────
+  {
+    id: 'log-19',
+    at: '2026-04-27T08:30:00',
+    accessionNumber: 'S26-12609',
+    patient: 'Ahmed Hassan',
+    caseType: 'Surgical Nerve',
+    event: 'Grossing started',
+    category: 'submit',
+    variant: 'info',
+    user: 'JD',
+  },
+
+  // ─── Apr 26 ────────────────────────────────────────────────────────
+  {
+    id: 'log-20',
+    at: '2026-04-26T13:00:00',
+    accessionNumber: 'S26-12601',
+    patient: 'David Kim',
+    caseType: 'Surgical',
+    event: 'Case finalized',
+    category: 'finalize',
+    variant: 'success',
+    user: 'JD',
+    tags: ['special_stains'],
+  },
+
+  // ─── Apr 25 ────────────────────────────────────────────────────────
+  {
+    id: 'log-21',
+    at: '2026-04-25T10:30:00',
+    accessionNumber: 'S26-12602',
+    patient: 'Alice Reed',
+    caseType: 'Surgical',
+    event: 'Materials received',
+    category: 'intake',
+    variant: 'info',
+    user: 'JD',
+  },
+
+  // ─── Apr 24 ────────────────────────────────────────────────────────
+  {
+    id: 'log-22',
+    at: '2026-04-24T10:45:00',
+    accessionNumber: 'S26-12609',
+    patient: 'Ahmed Hassan',
+    caseType: 'Surgical Nerve',
+    event: 'Damaged FedEx package — bottle leaked',
+    category: 'flag',
+    variant: 'danger',
+    user: 'KL',
+  },
+
+  // ─── Apr 23 ────────────────────────────────────────────────────────
+  {
+    id: 'log-23',
+    at: '2026-04-23T11:20:00',
+    accessionNumber: 'S26-12601',
+    patient: 'David Kim',
+    caseType: 'Surgical',
+    event: 'Grossing started',
+    category: 'submit',
+    variant: 'info',
+    user: 'JD',
+    tags: ['special_stains'],
+  },
+
+  // ─── Apr 22 ────────────────────────────────────────────────────────
+  {
+    id: 'log-24',
+    at: '2026-04-22T09:15:00',
+    accessionNumber: 'S26-12601',
+    patient: 'David Kim',
+    caseType: 'Surgical',
+    event: 'Materials received',
+    category: 'intake',
+    variant: 'info',
+    user: 'JD',
+    tags: ['special_stains'],
+  },
+
+  // ─── Apr 21 ────────────────────────────────────────────────────────
+  {
+    id: 'log-25',
+    at: '2026-04-21T15:45:00',
+    accessionNumber: 'S26-12605',
+    patient: 'Julia Romano',
+    caseType: 'Preimplantation Kidney Biopsy',
+    event: 'Case finalized',
+    category: 'finalize',
+    variant: 'success',
+    user: 'MS',
+    tags: ['tx'],
+  },
+
+  // ─── Apr 20 ────────────────────────────────────────────────────────
+  {
+    id: 'log-26',
+    at: '2026-04-20T11:30:00',
+    accessionNumber: 'S26-12431',
+    patient: 'Daniel Cho',
+    caseType: 'Surgical Nerve',
+    event: 'Case finalized',
+    category: 'finalize',
+    variant: 'success',
+    user: 'JD',
+    tags: ['special_stains'],
+  },
+
+  // ─── Apr 19 ────────────────────────────────────────────────────────
+  {
+    id: 'log-27',
+    at: '2026-04-19T14:00:00',
+    accessionNumber: 'S26-12605',
+    patient: 'Julia Romano',
+    caseType: 'Preimplantation Kidney Biopsy',
+    event: 'Implant biopsy grossed',
+    category: 'submit',
+    variant: 'info',
+    user: 'MS',
+    tags: ['tx'],
+  },
+
+  // ─── Apr 18 ────────────────────────────────────────────────────────
+  {
+    id: 'log-28',
+    at: '2026-04-18T11:00:00',
+    accessionNumber: 'S26-12605',
+    patient: 'Julia Romano',
+    caseType: 'Preimplantation Kidney Biopsy',
+    event: 'Materials received — implantation',
+    category: 'intake',
+    variant: 'info',
+    user: 'MS',
+    tags: ['tx'],
+  },
+
+  // ─── Apr 17 ────────────────────────────────────────────────────────
+  {
+    id: 'log-29',
+    at: '2026-04-17T10:00:00',
+    accessionNumber: 'S26-12431',
+    patient: 'Daniel Cho',
+    caseType: 'Surgical Nerve',
+    event: 'Grossing started',
+    category: 'submit',
+    variant: 'info',
+    user: 'JD',
+    tags: ['special_stains'],
+  },
+
+  // ─── Apr 16 (oldest) ───────────────────────────────────────────────
+  {
+    id: 'log-30',
+    at: '2026-04-16T09:30:00',
+    accessionNumber: 'S26-12431',
+    patient: 'Daniel Cho',
+    caseType: 'Surgical Nerve',
+    event: 'Materials received',
+    category: 'intake',
+    variant: 'info',
+    user: 'KL',
+    tags: ['special_stains'],
+  },
 ];
 
 const ALL_CASE_TYPES = '__all__';
 const ALL_USERS = '__all__';
+
+type SortKey = 'lastUpdate' | 'caseNumber' | 'caseType';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'lastUpdate', label: 'Last Update' },
+  { value: 'caseNumber', label: 'Case #' },
+  { value: 'caseType', label: 'Case Type' },
+];
 
 function AccessionTag({ tagKey }: { tagKey: AccessionTagKey }) {
   const def = TAG_DEF_BY_KEY[tagKey];
@@ -284,6 +488,7 @@ function AccessionTag({ tagKey }: { tagKey: AccessionTagKey }) {
   );
 }
 
+
 interface CaseGroup {
   accessionNumber: string;
   patient: string;
@@ -294,11 +499,20 @@ interface CaseGroup {
   latestEntry: LogEntry;
 }
 
+interface FilteredCaseGroup extends CaseGroup {
+  // Latest entry on the selected day, plus only that day's entries.
+  latestOnDay: LogEntry;
+  entriesOnDay: LogEntry[];
+}
+
 export function AccessionLogs() {
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>(ALL_CASE_TYPES);
   const [userFilter, setUserFilter] = useState<string>(ALL_USERS);
   const [activeTags, setActiveTags] = useState<Set<AccessionTagKey>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<SortKey>('lastUpdate');
+  const [sortAsc, setSortAsc] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState<string>(DEMO_TODAY_YMD);
 
   const caseGroups = useMemo<CaseGroup[]>(() => {
     const map = new Map<string, LogEntry[]>();
@@ -309,9 +523,7 @@ export function AccessionLogs() {
     }
     const groups: CaseGroup[] = [];
     for (const [accessionNumber, entries] of map) {
-      const sorted = [...entries].sort(
-        (a, b) => timestampSortKey(b.timestamp) - timestampSortKey(a.timestamp),
-      );
+      const sorted = [...entries].sort((a, b) => b.at.localeCompare(a.at));
       const tagSet = new Set<AccessionTagKey>();
       const userSet = new Set<string>();
       for (const e of sorted) {
@@ -328,11 +540,6 @@ export function AccessionLogs() {
         latestEntry: sorted[0]!,
       });
     }
-    groups.sort(
-      (a, b) =>
-        timestampSortKey(b.latestEntry.timestamp) -
-        timestampSortKey(a.latestEntry.timestamp),
-    );
     return groups;
   }, []);
 
@@ -348,21 +555,44 @@ export function AccessionLogs() {
     return Array.from(unique).sort();
   }, [caseGroups]);
 
-  const filteredGroups = useMemo(() => {
-    return caseGroups.filter((g) => {
-      if (caseTypeFilter !== ALL_CASE_TYPES && g.caseType !== caseTypeFilter) {
-        return false;
+  const filteredGroups = useMemo<FilteredCaseGroup[]>(() => {
+    const result: FilteredCaseGroup[] = [];
+    for (const g of caseGroups) {
+      if (caseTypeFilter !== ALL_CASE_TYPES && g.caseType !== caseTypeFilter) continue;
+      if (userFilter !== ALL_USERS && !g.users.includes(userFilter)) continue;
+      if (activeTags.size > 0) {
+        let allMatch = true;
+        for (const required of activeTags) {
+          if (!g.tags.includes(required)) {
+            allMatch = false;
+            break;
+          }
+        }
+        if (!allMatch) continue;
       }
-      if (userFilter !== ALL_USERS && !g.users.includes(userFilter)) {
-        return false;
+      // Only entries on the selected day. entries is pre-sorted desc by `at`.
+      const entriesOnDay = g.entries.filter((e) => entryYmd(e) === selectedDate);
+      if (entriesOnDay.length === 0) continue;
+      result.push({ ...g, latestOnDay: entriesOnDay[0]!, entriesOnDay });
+    }
+    return result;
+  }, [caseGroups, caseTypeFilter, userFilter, activeTags, selectedDate]);
+
+  const sortedGroups = useMemo<FilteredCaseGroup[]>(() => {
+    const sorted = [...filteredGroups].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'lastUpdate') {
+        cmp = a.latestOnDay.at.localeCompare(b.latestOnDay.at);
+      } else if (sortKey === 'caseNumber') {
+        cmp = a.accessionNumber.localeCompare(b.accessionNumber);
+      } else if (sortKey === 'caseType') {
+        cmp = a.caseType.localeCompare(b.caseType);
+        if (cmp === 0) cmp = a.accessionNumber.localeCompare(b.accessionNumber);
       }
-      if (activeTags.size === 0) return true;
-      for (const required of activeTags) {
-        if (!g.tags.includes(required)) return false;
-      }
-      return true;
+      return sortAsc ? cmp : -cmp;
     });
-  }, [caseGroups, caseTypeFilter, userFilter, activeTags]);
+    return sorted;
+  }, [filteredGroups, sortKey, sortAsc]);
 
   function toggleExpanded(accessionNumber: string) {
     setExpanded((prev) => {
@@ -386,12 +616,14 @@ export function AccessionLogs() {
     setCaseTypeFilter(ALL_CASE_TYPES);
     setUserFilter(ALL_USERS);
     setActiveTags(new Set());
+    setSelectedDate(DEMO_TODAY_YMD);
   }
 
   const hasActiveFilters =
     caseTypeFilter !== ALL_CASE_TYPES ||
     userFilter !== ALL_USERS ||
-    activeTags.size > 0;
+    activeTags.size > 0 ||
+    selectedDate !== DEMO_TODAY_YMD;
 
   return (
     <div>
@@ -400,107 +632,150 @@ export function AccessionLogs() {
           ← Home
         </Link>
         <h1 className="text-2xl font-semibold text-arkana-black mt-1">Accession Logs</h1>
-        <p className="text-arkana-gray-500 mt-1">Recent intake activity across the bench.</p>
+        <p className="text-arkana-gray-500 mt-1">Activity across the bench — grouped by case.</p>
       </div>
 
       <Card className="mb-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2 flex-wrap">
-              <label
-                htmlFor="case-type-filter"
-                className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500"
+        {/* Single filter row — date + selects + tag chips */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            id="selected-date"
+            type="date"
+            aria-label="Filter by date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value || DEMO_TODAY_YMD)}
+            className="h-9 rounded-lg border border-arkana-gray-200 bg-white px-2.5 text-sm text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+          />
+          <select
+            id="case-type-filter"
+            aria-label="Filter by case type"
+            value={caseTypeFilter}
+            onChange={(e) => setCaseTypeFilter(e.target.value)}
+            className="h-9 rounded-lg border border-arkana-gray-200 bg-white px-2.5 text-sm text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+          >
+            <option value={ALL_CASE_TYPES}>All case types</option>
+            {caseTypeOptions.map((ct) => (
+              <option key={ct} value={ct}>
+                {ct}
+              </option>
+            ))}
+          </select>
+          <select
+            id="user-filter"
+            aria-label="Filter by user"
+            value={userFilter}
+            onChange={(e) => setUserFilter(e.target.value)}
+            className="h-9 rounded-lg border border-arkana-gray-200 bg-white px-2.5 text-sm text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+          >
+            <option value={ALL_USERS}>All users</option>
+            {userOptions.map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
+          </select>
+          <span className="mx-1.5 text-arkana-gray-200 select-none" aria-hidden>·</span>
+          {ACCESSION_TAG_DEFS.map((def) => {
+            const selected = activeTags.has(def.key);
+            return (
+              <button
+                key={def.key}
+                type="button"
+                onClick={() => toggleTag(def.key)}
+                aria-pressed={selected}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 h-7 text-xs font-semibold transition ${
+                  selected
+                    ? def.classes
+                    : 'border-arkana-gray-200 bg-white text-arkana-gray-500 hover:border-arkana-gray-400 hover:text-arkana-black'
+                }`}
               >
-                Case Type
-              </label>
-              <select
-                id="case-type-filter"
-                value={caseTypeFilter}
-                onChange={(e) => setCaseTypeFilter(e.target.value)}
-                className="h-9 rounded-lg border border-arkana-gray-200 bg-white px-2 text-sm text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
-              >
-                <option value={ALL_CASE_TYPES}>All case types</option>
-                {caseTypeOptions.map((ct) => (
-                  <option key={ct} value={ct}>
-                    {ct}
-                  </option>
-                ))}
-              </select>
-            </div>
+                {selected && <span aria-hidden>✓</span>}
+                {def.label}
+              </button>
+            );
+          })}
+        </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <label
-                htmlFor="user-filter"
-                className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500"
-              >
-                User
-              </label>
-              <select
-                id="user-filter"
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-                className="h-9 rounded-lg border border-arkana-gray-200 bg-white px-2 text-sm text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
-              >
-                <option value={ALL_USERS}>All users</option>
-                {userOptions.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs uppercase tracking-wide font-bold text-arkana-gray-500">
-              Tags
+        {/* Footer */}
+        <div className="mt-4 pt-3 border-t border-arkana-gray-100 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-arkana-gray-500">
+              <span className="font-semibold text-arkana-black tabular-nums">
+                {filteredGroups.length}
+              </span>{' '}
+              of {caseGroups.length} cases
             </span>
-            {ACCESSION_TAG_DEFS.map((def) => {
-              const selected = activeTags.has(def.key);
-              return (
-                <button
-                  key={def.key}
-                  type="button"
-                  onClick={() => toggleTag(def.key)}
-                  aria-pressed={selected}
-                  className={`inline-flex items-center rounded-full border px-3 h-7 text-xs font-semibold transition ${
-                    def.classes
-                  } ${
-                    selected
-                      ? 'ring-2 ring-offset-1 ring-arkana-black/40'
-                      : 'opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  {selected && <span className="mr-1" aria-hidden>✓</span>}
-                  {def.label}
-                </button>
-              );
-            })}
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={clearFilters}
-                className="ml-1 text-xs text-arkana-gray-500 hover:text-arkana-red underline"
+                className="text-xs text-arkana-red hover:text-arkana-red-dark underline"
               >
-                Clear
+                Clear filters
               </button>
             )}
           </div>
-        </div>
-
-        <div className="mt-3 text-xs text-arkana-gray-500">
-          Showing {filteredGroups.length} of {caseGroups.length} cases
+          <div className="flex items-center gap-1.5">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-arkana-gray-500"
+              aria-hidden
+            >
+              <path d="M3 6h18M6 12h12M10 18h4" />
+            </svg>
+            <select
+              id="sort-key"
+              aria-label="Sort cases"
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+              className="h-8 rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setSortAsc((v) => !v)}
+              aria-label={`Sort ${sortAsc ? 'ascending' : 'descending'} — click to toggle`}
+              title={sortAsc ? 'Ascending — click for descending' : 'Descending — click for ascending'}
+              className="h-8 w-8 rounded-lg border border-arkana-gray-200 bg-white text-arkana-black hover:border-arkana-gray-400 flex items-center justify-center text-sm font-bold"
+            >
+              {sortAsc ? '↑' : '↓'}
+            </button>
+          </div>
         </div>
       </Card>
 
       <Card>
-        {filteredGroups.length === 0 ? (
-          <p className="text-sm text-arkana-gray-500 italic py-4 text-center">
-            No cases match the current filters.
-          </p>
+        {sortedGroups.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-arkana-gray-500 italic mb-3">
+              No cases match the current filters.
+            </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs text-arkana-red hover:text-arkana-red-dark underline"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
         ) : (
           <ul className="divide-y divide-arkana-gray-200">
-            {filteredGroups.map((group) => {
+            {sortedGroups.map((group) => {
               const isOpen = expanded.has(group.accessionNumber);
               return (
                 <li key={group.accessionNumber}>
@@ -536,12 +811,16 @@ export function AccessionLogs() {
                         )}
                       </div>
                       <div className="text-xs text-arkana-gray-500 mt-0.5 truncate">
-                        Latest: {group.latestEntry.timestamp} · {group.latestEntry.event}
+                        Latest: {formatTimestampForDisplay(group.latestOnDay.at)} ·{' '}
+                        {group.latestOnDay.event}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-arkana-gray-500 tabular-nums">
-                        {group.entries.length} {group.entries.length === 1 ? 'event' : 'events'}
+                      <Tag variant={group.latestOnDay.variant}>
+                        {CATEGORY_LABEL[group.latestOnDay.category]}
+                      </Tag>
+                      <span className="text-xs text-arkana-gray-500 tabular-nums hidden sm:inline">
+                        {group.entriesOnDay.length} {group.entriesOnDay.length === 1 ? 'event' : 'events'}
                       </span>
                       <div className="flex -space-x-1">
                         {group.users.map((u) => (
@@ -572,10 +851,10 @@ export function AccessionLogs() {
                           </Link>
                         </div>
                         <ul className="space-y-3">
-                          {group.entries.map((entry) => (
+                          {group.entriesOnDay.map((entry) => (
                             <li key={entry.id} className="flex items-start gap-3">
-                              <div className="text-xs text-arkana-gray-500 w-24 shrink-0 mt-0.5 tabular-nums">
-                                {entry.timestamp}
+                              <div className="text-xs text-arkana-gray-500 w-28 shrink-0 mt-0.5 tabular-nums">
+                                {formatTimestampForDisplay(entry.at)}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm text-arkana-black">{entry.event}</div>

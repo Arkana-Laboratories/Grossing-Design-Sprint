@@ -58,6 +58,11 @@ export function MeasurementList({
     setAdding(false);
   }
 
+  function removeMeasurementAt(idx: number) {
+    onChange(serialize(measurements.filter((_, i) => i !== idx)));
+    if (editingIdx === idx) resetDraft();
+  }
+
   function toggleDescriptorAt(idx: number, descriptor: TissueDescriptor) {
     const m = measurements[idx];
     if (!m) return;
@@ -311,16 +316,24 @@ export function MeasurementList({
                 <div className="md:col-span-2">{renderForm()}</div>
               ) : (
                 <>
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => startEdit(idx)}
-                      className="inline-flex items-center pl-3 pr-3 h-8 rounded-full bg-arkana-gray-50 border border-arkana-gray-200 text-sm text-arkana-black w-full hover:border-arkana-red hover:bg-red-50 transition text-left"
+                      className="inline-flex items-center pl-3 pr-3 h-8 rounded-full bg-arkana-gray-50 border border-arkana-gray-200 text-sm text-arkana-black flex-1 min-w-0 hover:border-arkana-red hover:bg-red-50 transition text-left"
                       aria-label={`Edit measurement ${formatMeasurement(m)}`}
                     >
                       <span className="font-medium tabular-nums flex-1 truncate">
                         {formatMeasurement(m)}
                       </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeMeasurementAt(idx)}
+                      className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-arkana-gray-400 hover:bg-red-50 hover:text-arkana-red transition"
+                      aria-label={`Remove measurement ${formatMeasurement(m)}`}
+                    >
+                      ×
                     </button>
                   </div>
                   <DescriptorChips
