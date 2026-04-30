@@ -29,16 +29,22 @@ export const RENAL_PROCEDURE_ROWS = [
 
 export type RenalProcedureKey = typeof RENAL_PROCEDURE_ROWS[number]['key'];
 
-export const RENAL_PRE_ANALYTICAL_QA_OPTIONS = [
-  { value: 'damaged_items', label: 'Damaged Items' },
-  { value: 'materials_not_labeled', label: 'Materials Not Labeled' },
-  { value: 'foreign_bottle', label: 'Foreign Bottle' },
-  { value: 'no_tissue_in_bottle', label: 'No Tissue In Bottle' },
-  { value: 'no_paperwork_received', label: 'No Paperwork Received' },
-  { value: 'bottle_leaked', label: 'Bottle Leaked / Spilled' },
-] as const;
-
-export type RenalQaFlag = typeof RENAL_PRE_ANALYTICAL_QA_OPTIONS[number]['value'];
+export interface RenalPreAnalyticalQa {
+  damagedItems: string[];
+  materialsNotLabeled: string[];
+  materialsNotLabeledOther: string;
+  foreignBottle: string[];
+  foreignBottleOther: string;
+  noPaperworkReceived: boolean;
+  specimensInOnePackage: boolean;
+  specimensCount: string;
+  specimensFrom: string;
+  noTissueInBottle: string[];
+  bottleLeaked: string[];
+  bottleLeakedOther: string;
+  other: string;
+  bottleComments: { formalin: string; michels: string; glutaraldehyde: string };
+}
 
 import type { TissueDescriptor } from './descriptors';
 
@@ -60,10 +66,17 @@ export const PIF_REASONS = [
 
 export type PifReason = (typeof PIF_REASONS)[number];
 
+export interface BottleCounts {
+  formalin: number;
+  michels: number;
+  glutaraldehyde: number;
+}
+
 export interface RenalIdfState {
   panelType: 'renal';
+  bottleCounts: BottleCounts;
   procedures: Record<RenalProcedureKey, RenalProcedureRowState>;
-  preAnalyticalQa: RenalQaFlag[];
+  preAnalyticalQa: RenalPreAnalyticalQa;
   comments: string;
 }
 
@@ -81,8 +94,24 @@ export function createEmptyRenalIdf(): RenalIdfState {
   }
   return {
     panelType: 'renal',
+    bottleCounts: { formalin: 1, michels: 1, glutaraldehyde: 0 },
     procedures,
-    preAnalyticalQa: [],
+    preAnalyticalQa: {
+      damagedItems: [],
+      materialsNotLabeled: [],
+      materialsNotLabeledOther: '',
+      foreignBottle: [],
+      foreignBottleOther: '',
+      noPaperworkReceived: false,
+      specimensInOnePackage: false,
+      specimensCount: '',
+      specimensFrom: '',
+      noTissueInBottle: [],
+      bottleLeaked: [],
+      bottleLeakedOther: '',
+      other: '',
+      bottleComments: { formalin: '', michels: '', glutaraldehyde: '' },
+    },
     comments: '',
   };
 }
@@ -98,6 +127,5 @@ export const RENAL_IDF_TEMPLATE = {
   source: 'IDF-RENAL-v4.0-2026-01-21',
   specimenCategories: RENAL_SPECIMEN_CATEGORIES,
   procedureRows: RENAL_PROCEDURE_ROWS,
-  preAnalyticalQaOptions: RENAL_PRE_ANALYTICAL_QA_OPTIONS,
   createEmpty: createEmptyRenalIdf,
 };

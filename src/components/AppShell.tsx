@@ -69,22 +69,17 @@ export function AppShell() {
         </Link>
         <div className="flex items-center gap-2 lg:gap-3 shrink-0">
           {presets.length > 0 && (
-            <label className="flex items-center gap-2 text-xs">
-              <span className="hidden lg:inline font-bold uppercase tracking-wide text-arkana-gray-500">
-                Demo
-              </span>
-              <select
-                value={activePresetId ?? ''}
-                onChange={(e) => setActivePresetId(e.target.value)}
-                className="h-9 w-32 sm:w-40 md:w-44 lg:w-56 xl:w-72 rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
-              >
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <select
+              value={activePresetId ?? ''}
+              onChange={(e) => setActivePresetId(e.target.value)}
+              className="h-8 w-28 sm:w-32 rounded-lg border border-arkana-gray-200 bg-white px-2 text-xs text-arkana-black focus:outline-none focus:ring-2 focus:ring-arkana-red"
+            >
+              {presets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           )}
           <button
             aria-label={`Notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}

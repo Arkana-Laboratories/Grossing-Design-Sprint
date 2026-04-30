@@ -93,7 +93,9 @@ export function serialize(measurements: Measurement[]): string {
 // ─── Display ─────────────────────────────────────────────────────────────────
 
 export function formatDim(d: DimRange): string {
-  return isExact(d) ? String(d.min) : `${d.min}-${d.max}`;
+  if (!isExact(d)) return `${d.min}-${d.max}`;
+  const v = d.min;
+  return Number.isInteger(v) ? `${v}.0` : String(v);
 }
 
 export function formatMeasurement(m: Measurement): string {

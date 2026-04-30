@@ -4,6 +4,7 @@ import { Tag } from './ui/Tag';
 import {
   RENAL_IDF_TEMPLATE,
   type RenalIdfState,
+  type RenalPreAnalyticalQa,
   getRenalSpecimenCategoryLabel,
 } from '../templates/renalIdf';
 import {
@@ -28,6 +29,30 @@ export function SummaryRow({
         {label}
       </dt>
       <dd className="text-arkana-black font-medium mt-0.5">{children}</dd>
+    </div>
+  );
+}
+
+function QaReadonlySummary({ qa }: { qa: RenalPreAnalyticalQa }) {
+  const tags: string[] = [];
+  if (qa.damagedItems.length > 0) tags.push(`Damaged Items`);
+  if (qa.materialsNotLabeled.length > 0) tags.push('Materials Not Labeled');
+  if (qa.foreignBottle.length > 0) tags.push('Foreign Bottle');
+  if (qa.noTissueInBottle.length > 0) tags.push('No Tissue In Bottle');
+  if (qa.bottleLeaked.length > 0) tags.push('Bottle Leaked/Spilled');
+  if (qa.noPaperworkReceived) tags.push('No Paperwork Received');
+  if (qa.specimensInOnePackage)
+    tags.push(
+      `Specimens In One Package${qa.specimensCount ? ` (${qa.specimensCount})` : ''}${qa.specimensFrom ? ` from ${qa.specimensFrom}` : ''}`,
+    );
+  if (qa.other) tags.push(`Other: ${qa.other}`);
+
+  if (tags.length === 0) return <p className="text-sm text-arkana-gray-500">No QA flags raised.</p>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {tags.map((t) => (
+        <Tag key={t} variant="warning">{t}</Tag>
+      ))}
     </div>
   );
 }
@@ -91,21 +116,7 @@ export function RenalReadonlyView({
       </Card>
 
       <Card title="Pre-Analytical QA" className="mb-5">
-        {idf.preAnalyticalQa.length === 0 ? (
-          <p className="text-sm text-arkana-gray-500">No QA flags raised.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {idf.preAnalyticalQa.map((v) => (
-              <Tag key={v} variant="warning">
-                {
-                  RENAL_IDF_TEMPLATE.preAnalyticalQaOptions.find(
-                    (o) => o.value === v,
-                  )?.label
-                }
-              </Tag>
-            ))}
-          </div>
-        )}
+        <QaReadonlySummary qa={idf.preAnalyticalQa} />
       </Card>
 
       {idf.comments && (

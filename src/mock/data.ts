@@ -23,6 +23,7 @@ export const mockCases: Case[] = [
     specimenCategory: 'native_kidney',
     patient: { id: 'pat-1', medicalRecordNumber: 'MRN-4421', firstName: 'Jane', lastName: 'Doe', dateOfBirth: '1978-05-12' },
     receivedAt: '2026-04-29T10:15:00',
+    submittingState: 'TX',
     materials: [formalin('mat-1-a'), michels('mat-1-b')],
     panels: { numberOfCores: 4, lymphNodeCount: 3, immunofluorescenceCount: 1 },
     flags: [],

@@ -11,6 +11,8 @@ import {
   RENAL_IDF_TEMPLATE,
   type RenalIdfState,
   type RenalProcedureKey,
+  type BottleCounts,
+  type RenalPreAnalyticalQa,
   getRenalSpecimenCategoryLabel,
 } from '../templates/renalIdf';
 import type { Case, Preservative } from '../mock/types';
@@ -23,7 +25,6 @@ import { MeasurementList } from './MeasurementList';
 import {
   routeRenalDictation,
   applyToRenal,
-  type RoutedClause,
 } from '../lib/routeDictation';
 import { DescriptorChips } from './DescriptorChips';
 import { PifChip } from './PifChip';
@@ -38,27 +39,32 @@ interface RenalPreset {
   id: string;
   label: string;
   transcript: string;
+  displayTranscript?: string;
   bottles: Preservative[];
+  procedurePatch?: Partial<Record<RenalProcedureKey, { descriptors?: TissueDescriptor[] }>>;
 }
 
 const RENAL_PRESETS: RenalPreset[] = [
   {
-    id: 'renal-three-bottle',
-    label: 'Renal · 3-bottle: formalin + michel + glute',
+    id: 'normal-case',
+    label: 'Normal case',
     bottles: ['formalin', 'michels', 'glutaraldehyde'],
+    displayTranscript:
+      "Received in Michel's are 2 pieces of tissue, measuring 0.8 and 0.9 cm. The tissue appearance is tan.\n" +
+      "Received in Formalin are 3 pieces of tissue, measuring 0.5, 0.7, and 1.0 cm. The tissue appearance is tan.\n" +
+      "2 ends are submitted for EM processing.",
     transcript:
-      "formalin two at one point one by zero point one by zero point one comma three at zero point nine by zero point one by zero point one michel's two at one point five by zero point one by zero point one glute one at zero point five by zero point one by zero point one",
+      "michel's one at zero point eight by zero point one by zero point one comma one at zero point nine by zero point one by zero point one " +
+      "formalin one at zero point five by zero point one by zero point one comma one at zero point seven by zero point one by zero point one comma one at one point zero by zero point one by zero point one " +
+      "glute",
+    procedurePatch: {
+      lightMicroscopy: { descriptors: ['tan'] },
+      immunofluorescence: { descriptors: ['tan'] },
+    },
   },
   {
-    id: 'renal-two-bottle',
-    label: 'Renal · 2-bottle: formalin + michel (no glute → fan-out)',
-    bottles: ['formalin', 'michels'],
-    transcript:
-      "formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one michel's two at one point four by zero point one by zero point one",
-  },
-  {
-    id: 'renal-one-bottle',
-    label: 'Renal · 1-bottle: formalin only (fans to LM + EM)',
+    id: 'special-case',
+    label: 'Special case',
     bottles: ['formalin'],
     transcript:
       'formalin three at one point two by zero point one by zero point one comma two at zero point eight by zero point one by zero point one',
@@ -74,8 +80,6 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   const activePreset = useRegisterDemoPresets(presets) ?? RENAL_PRESETS[0]!;
   const [pulsedKeys, setPulsedKeys] = useState<RenalProcedureKey[]>([]);
   const [lastSource, setLastSource] = useState<Partial<Record<RenalProcedureKey, string>>>({});
-  const [routingLog, setRoutingLog] = useState<RoutedClause[]>([]);
-  const [logOpen, setLogOpen] = useState(true);
 
   useEffect(() => {
     if (pulsedKeys.length === 0) return;
@@ -118,7 +122,29 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   function handleTranscriptComplete(transcript: string) {
     const { routed } = routeRenalDictation(transcript);
 
-    updateRenal((current) => applyToRenal(current, routed));
+    updateRenal((current) => {
+      let next = applyToRenal(current, routed);
+
+      next = {
+        ...next,
+        bottleCounts: {
+          formalin: activePreset.bottles.includes('formalin') ? 1 : next.bottleCounts.formalin,
+          michels: activePreset.bottles.includes('michels') ? 1 : next.bottleCounts.michels,
+          glutaraldehyde: activePreset.bottles.includes('glutaraldehyde') ? 1 : next.bottleCounts.glutaraldehyde,
+        },
+      };
+
+      // Apply any per-procedure patches (e.g. descriptors) defined in the preset
+      if (activePreset.procedurePatch) {
+        const procedures = { ...next.procedures };
+        for (const [key, patch] of Object.entries(activePreset.procedurePatch) as [RenalProcedureKey, { descriptors?: TissueDescriptor[] }][]) {
+          procedures[key] = { ...procedures[key], ...patch };
+        }
+        next = { ...next, procedures };
+      }
+
+      return next;
+    });
 
     const touchedKeys = new Set<RenalProcedureKey>();
     const newSource: Partial<Record<RenalProcedureKey, string>> = {};
@@ -135,8 +161,6 @@ export function RenalIdfForm({ caseData, idf }: Props) {
 
     setPulsedKeys(Array.from(touchedKeys));
     setLastSource((prev) => ({ ...prev, ...newSource }));
-    setRoutingLog(routed);
-
     if (touchedKeys.size === 0) {
       toast({
         message: "Couldn't route any measurements — please add manually.",
@@ -177,21 +201,9 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     navigate(`/case/${caseData.accessionNumber}/summary`);
   }
 
-  function toggleQa(value: typeof idf.preAnalyticalQa[number]) {
-    updateRenal((current) => ({
-      ...current,
-      preAnalyticalQa: current.preAnalyticalQa.includes(value)
-        ? current.preAnalyticalQa.filter((v) => v !== value)
-        : [...current.preAnalyticalQa, value],
-    }));
-  }
-
   return (
     <div className="space-y-5">
       <FormHeader
-        templateName={RENAL_IDF_TEMPLATE.name}
-        templateSource={RENAL_IDF_TEMPLATE.source}
-        categoryLabel={getRenalSpecimenCategoryLabel(caseData.specimenCategory)}
         caseData={caseData}
         onReset={handleReset}
       />
@@ -199,38 +211,11 @@ export function RenalIdfForm({ caseData, idf }: Props) {
       <Card title="Dictation">
         <DictationMic
           onTranscriptComplete={handleTranscriptComplete}
-          presetTranscript={activePreset.transcript}
+          presetTranscript={activePreset.displayTranscript ?? activePreset.transcript}
+          routingTranscript={activePreset.displayTranscript ? activePreset.transcript : undefined}
           hint="Tap mic to dictate. Say bottle keywords (formalin, michel's, glute) to auto-route to LM / IF / EM."
         />
 
-        {routingLog.length > 0 && (
-          <div className="mt-3 border border-arkana-gray-200 rounded-xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setLogOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 h-10 text-xs uppercase tracking-wide font-bold text-arkana-gray-500 hover:bg-arkana-gray-50 transition"
-            >
-              <span>Routing log ({routingLog.length} clause{routingLog.length === 1 ? '' : 's'})</span>
-              <span aria-hidden>{logOpen ? '▾' : '▸'}</span>
-            </button>
-            {logOpen && (
-              <div className="border-t border-arkana-gray-200 divide-y divide-arkana-gray-200">
-                {routingLog.map((r, idx) => (
-                  <div key={idx} className="px-4 py-2 text-xs">
-                    <div className="text-arkana-black font-mono break-words">
-                      {r.sourceText}
-                    </div>
-                    <div className="text-arkana-gray-500 mt-0.5">
-                      → {r.targets.map(humanLabel).join(', ') || '(no measurements)'}{' '}
-                      <span className="text-arkana-gray-500">·</span>{' '}
-                      <span className="italic">{r.reason}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </Card>
 
       <Card title="Procedures">
@@ -302,37 +287,16 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         </div>
       </Card>
 
-      <Card title="Pre-Analytical QA">
-        <div className="flex flex-wrap gap-2">
-          {RENAL_IDF_TEMPLATE.preAnalyticalQaOptions.map((opt) => {
-            const checked = idf.preAnalyticalQa.includes(opt.value);
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => toggleQa(opt.value)}
-                className={`px-3 h-9 rounded-full border text-xs font-medium transition ${
-                  checked
-                    ? 'border-arkana-red bg-arkana-red-light text-arkana-red-dark'
-                    : 'border-arkana-gray-200 bg-white text-arkana-black hover:border-arkana-gray-500'
-                }`}
-              >
-                {checked && '✓ '}
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-        {idf.preAnalyticalQa.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {idf.preAnalyticalQa.map((v) => (
-              <Tag key={v} variant="warning">
-                {RENAL_IDF_TEMPLATE.preAnalyticalQaOptions.find((o) => o.value === v)?.label}
-              </Tag>
-            ))}
-          </div>
-        )}
-      </Card>
+      <BottlesAndQaCard
+        counts={idf.bottleCounts}
+        qa={idf.preAnalyticalQa}
+        onCountsChange={(counts) =>
+          updateRenal((current) => ({ ...current, bottleCounts: counts }))
+        }
+        onQaChange={(qa) =>
+          updateRenal((current) => ({ ...current, preAnalyticalQa: qa }))
+        }
+      />
 
       <Card title="Comments">
         <textarea
@@ -412,12 +376,6 @@ function collectRenalValidationErrors(
       "Michel's bottle received — Immunofluorescence needs at least one measurement (or mark as PIF).",
     );
   }
-  if (preservatives.has('glutaraldehyde') && !emHas && !emPif) {
-    errors.push(
-      'Glutaraldehyde bottle received — Electron Microscopy needs at least one measurement (or mark as PIF).',
-    );
-  }
-
   // Fallback when no bottle rules apply (no preset selected and no materials).
   if (errors.length === 0 && preservatives.size === 0 && !lmHas && !ifHas && !emHas) {
     errors.push(
@@ -428,45 +386,268 @@ function collectRenalValidationErrors(
   return errors;
 }
 
-function humanLabel(target: string): string {
-  const row = RENAL_IDF_TEMPLATE.procedureRows.find((r) => r.key === target);
-  return row?.label ?? target;
+// ─── Bottles Received & Pre-Analytical QA ────────────────────────────────────
+
+type BottleQaField = keyof Pick<
+  RenalPreAnalyticalQa,
+  'damagedItems' | 'materialsNotLabeled' | 'foreignBottle' | 'noTissueInBottle' | 'bottleLeaked'
+>;
+
+const PER_BOTTLE_QA: { label: string; field: BottleQaField }[] = [
+  { label: 'Damaged', field: 'damagedItems' },
+  { label: 'Not Labeled', field: 'materialsNotLabeled' },
+  { label: 'Foreign Bottle', field: 'foreignBottle' },
+  { label: 'No Tissue', field: 'noTissueInBottle' },
+  { label: 'Leaked', field: 'bottleLeaked' },
+];
+
+const BOTTLE_QA_ROWS: {
+  countKey: keyof BottleCounts;
+  itemKey: string;
+  label: string;
+}[] = [
+  { countKey: 'formalin', itemKey: 'formalin_bottle', label: 'Formalin' },
+  { countKey: 'michels', itemKey: 'michels_bottle', label: "Michel's" },
+  { countKey: 'glutaraldehyde', itemKey: 'glutaraldehyde_bottle', label: 'Glutaraldehyde' },
+];
+
+function QaChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-2.5 h-7 rounded-full border text-xs font-medium transition ${
+        selected
+          ? 'border-arkana-red bg-arkana-red-light text-arkana-red-dark'
+          : 'border-arkana-gray-200 bg-white text-arkana-black hover:border-arkana-gray-400'
+      }`}
+    >
+      {selected ? '✓ ' : ''}{label}
+    </button>
+  );
+}
+
+function BottlesAndQaCard({
+  counts,
+  qa,
+  onCountsChange,
+  onQaChange,
+}: {
+  counts: BottleCounts;
+  qa: RenalPreAnalyticalQa;
+  onCountsChange: (next: BottleCounts) => void;
+  onQaChange: (next: RenalPreAnalyticalQa) => void;
+}) {
+  const [openComments, setOpenComments] = useState<Set<keyof BottleCounts>>(new Set());
+
+  function adjustCount(key: keyof BottleCounts, delta: number) {
+    onCountsChange({ ...counts, [key]: Math.max(0, counts[key] + delta) });
+  }
+
+  function toggleBottleQa(field: BottleQaField, itemKey: string) {
+    const arr = qa[field] as string[];
+    onQaChange({
+      ...qa,
+      [field]: arr.includes(itemKey) ? arr.filter((v) => v !== itemKey) : [...arr, itemKey],
+    });
+  }
+
+  function toggleComment(key: keyof BottleCounts) {
+    setOpenComments((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function setBottleComment(key: keyof BottleCounts, value: string) {
+    onQaChange({
+      ...qa,
+      bottleComments: { ...qa.bottleComments, [key]: value },
+    });
+  }
+
+  return (
+    <Card title="Received & Pre-Analytical QA">
+      <div className="space-y-2">
+        {BOTTLE_QA_ROWS.map(({ countKey, itemKey, label }) => {
+          const commentOpen = openComments.has(countKey) || !!qa.bottleComments[countKey];
+          return (
+            <div key={countKey}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm text-arkana-gray-500 w-28 shrink-0">{label}</span>
+
+                {/* compact stepper: count + stacked ▲/▼ */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="w-5 text-center text-sm font-semibold tabular-nums text-arkana-black">
+                    {counts[countKey]}
+                  </span>
+                  <div className="flex flex-col gap-px">
+                    <button
+                      type="button"
+                      onClick={() => adjustCount(countKey, 1)}
+                      className="w-5 h-3.5 rounded border border-arkana-gray-200 text-arkana-gray-400 hover:border-arkana-gray-400 flex items-center justify-center text-[9px] leading-none transition"
+                      aria-label={`Increase ${label}`}
+                    >▲</button>
+                    <button
+                      type="button"
+                      onClick={() => adjustCount(countKey, -1)}
+                      disabled={counts[countKey] === 0}
+                      className="w-5 h-3.5 rounded border border-arkana-gray-200 text-arkana-gray-400 hover:border-arkana-gray-400 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-[9px] leading-none transition"
+                      aria-label={`Decrease ${label}`}
+                    >▼</button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 ml-3">
+                  {PER_BOTTLE_QA.map(({ label: chipLabel, field }) => (
+                    <QaChip
+                      key={field}
+                      label={chipLabel}
+                      selected={(qa[field] as string[]).includes(itemKey)}
+                      onClick={() => toggleBottleQa(field, itemKey)}
+                    />
+                  ))}
+                  <QaChip
+                    label="Other"
+                    selected={commentOpen}
+                    onClick={() => toggleComment(countKey)}
+                  />
+                </div>
+              </div>
+
+              {commentOpen && (
+                <input
+                  type="text"
+                  value={qa.bottleComments[countKey]}
+                  onChange={(e) => setBottleComment(countKey, e.target.value)}
+                  placeholder={`${label} note...`}
+                  autoFocus
+                  className="mt-1.5 ml-[8.5rem] w-[calc(100%-8.5rem)] h-7 rounded-lg border border-arkana-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-arkana-red"
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-arkana-gray-100">
+        <div className="text-[10px] uppercase tracking-wide font-bold text-arkana-gray-400 mb-2">
+          Other QA Flags
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <QaChip
+            label="FedEx Package Damaged"
+            selected={qa.damagedItems.includes('fedex_package')}
+            onClick={() => {
+              const arr = qa.damagedItems;
+              onQaChange({
+                ...qa,
+                damagedItems: arr.includes('fedex_package')
+                  ? arr.filter((v) => v !== 'fedex_package')
+                  : [...arr, 'fedex_package'],
+              });
+            }}
+          />
+          <QaChip
+            label="No Paperwork"
+            selected={qa.noPaperworkReceived}
+            onClick={() => onQaChange({ ...qa, noPaperworkReceived: !qa.noPaperworkReceived })}
+          />
+          <QaChip
+            label="Specimens In One Package"
+            selected={qa.specimensInOnePackage}
+            onClick={() => onQaChange({ ...qa, specimensInOnePackage: !qa.specimensInOnePackage })}
+          />
+        </div>
+        {qa.specimensInOnePackage && (
+          <div className="flex gap-2 mt-2">
+            <input
+              type="text"
+              value={qa.specimensCount}
+              onChange={(e) => onQaChange({ ...qa, specimensCount: e.target.value })}
+              placeholder="Count"
+              className="w-14 h-7 rounded-lg border border-arkana-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-arkana-red"
+            />
+            <input
+              type="text"
+              value={qa.specimensFrom}
+              onChange={(e) => onQaChange({ ...qa, specimensFrom: e.target.value })}
+              placeholder="From..."
+              className="flex-1 h-7 rounded-lg border border-arkana-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-arkana-red"
+            />
+          </div>
+        )}
+        <input
+          type="text"
+          value={qa.other}
+          onChange={(e) => onQaChange({ ...qa, other: e.target.value })}
+          placeholder="Other findings..."
+          className="mt-2 w-full h-7 rounded-lg border border-arkana-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-arkana-red"
+        />
+      </div>
+    </Card>
+  );
+}
+
+
+
+function formatDob(dob: string): string {
+  const [year, month, day] = dob.split('-');
+  return `${month}/${day}/${year}`;
+}
+
+function formatReceivedDate(iso: string | undefined): string {
+  const date = iso ? new Date(iso) : new Date();
+  return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 }
 
 interface HeaderProps {
-  templateName: string;
-  templateSource: string;
-  categoryLabel: string;
   caseData: Case;
   onReset: () => void;
 }
 
-function FormHeader({
-  templateName,
-  templateSource,
-  categoryLabel,
-  caseData,
-  onReset,
-}: HeaderProps) {
+function FormHeader({ caseData, onReset }: HeaderProps) {
   return (
-    <div className="flex items-start justify-between flex-wrap gap-3">
-      <div>
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <Tag variant="info">{templateName}</Tag>
-          <Tag variant="neutral">{categoryLabel}</Tag>
-          <span className="text-xs text-arkana-gray-500">{templateSource}</span>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <div className="flex items-start justify-between px-6 py-5 flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-3xl font-bold text-arkana-black tracking-arkana-tight">
+              {caseData.accessionNumber}
+            </h1>
+            <Tag variant="info">{caseData.caseType}</Tag>
+            {caseData.submittingState && (
+              <Tag variant="neutral">{caseData.submittingState}</Tag>
+            )}
+          </div>
+          <div className="flex items-center gap-2.5 mt-2 flex-wrap">
+            <span className="text-sm font-medium text-arkana-ink">
+              {caseData.patient.firstName} {caseData.patient.lastName}
+            </span>
+            <span className="text-arkana-gray-200 select-none">·</span>
+            <span className="text-sm text-arkana-gray-500">
+              DOB {formatDob(caseData.patient.dateOfBirth)}
+            </span>
+            <span className="text-arkana-gray-200 select-none">·</span>
+            <span className="text-sm text-arkana-gray-500">
+              Received {formatReceivedDate(caseData.receivedAt)}
+            </span>
+          </div>
         </div>
-        <h1 className="text-2xl font-semibold text-arkana-black">
-          {caseData.accessionNumber}
-        </h1>
-        <p className="text-arkana-gray-500 text-sm mt-0.5">
-          {caseData.patient.firstName} {caseData.patient.lastName} · MRN{' '}
-          {caseData.patient.medicalRecordNumber}
-        </p>
+        <Button variant="secondary" onClick={onReset}>
+          ↻ Reset
+        </Button>
       </div>
-      <Button variant="secondary" onClick={onReset}>
-        ↻ Reset
-      </Button>
     </div>
   );
 }

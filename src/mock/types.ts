@@ -47,6 +47,7 @@ export interface Case {
   tissueCategory?: NeuroTissueCategory;
   patient: Patient;
   receivedAt: string;
+  submittingState?: string;
   materials: Material[];
   panels: PanelInfo;
   flags: QualityFlag[];

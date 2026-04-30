@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   onTranscriptComplete: (transcript: string) => void;
   presetTranscript: string;
+  routingTranscript?: string;
   disabled?: boolean;
   hint?: string;
 }
@@ -10,6 +11,7 @@ interface Props {
 export function DictationMic({
   onTranscriptComplete,
   presetTranscript,
+  routingTranscript,
   disabled = false,
   hint,
 }: Props) {
@@ -36,6 +38,8 @@ export function DictationMic({
             window.clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
+          setRecording(false);
+          onTranscriptComplete(routingTranscript ?? presetTranscript);
           return;
         }
         setTranscript(presetTranscript.slice(0, charIndex + 1));
@@ -55,7 +59,7 @@ export function DictationMic({
     }
     setRecording(false);
     if (transcript.trim()) {
-      onTranscriptComplete(transcript);
+      onTranscriptComplete(routingTranscript ?? transcript);
     }
   }
 
