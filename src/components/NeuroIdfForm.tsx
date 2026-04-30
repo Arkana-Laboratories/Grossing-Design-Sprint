@@ -14,7 +14,10 @@ import {
   getNeuroTissueCategoryLabel,
 } from '../templates/neuroIdf';
 import type { Case } from '../mock/types';
-import { detectThinFromSize } from '../lib/parseDictation';
+import {
+  detectThinFromSize,
+  totalPiecesFromMeasurements,
+} from '../lib/parseDictation';
 import { parse } from '../lib/measurements';
 import {
   routeNeuroDictation,
