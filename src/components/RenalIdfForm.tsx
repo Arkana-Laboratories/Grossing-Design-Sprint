@@ -19,7 +19,7 @@ import {
 } from '../templates/renalIdf';
 import type { Case, Preservative } from '../mock/types';
 import { totalPiecesFromMeasurements } from '../lib/parseDictation';
-import { parse, serialize } from '../lib/measurements';
+import { parse, serialize, totalCount } from '../lib/measurements';
 import { MeasurementList } from './MeasurementList';
 import {
   routeRenalDictation,
@@ -38,14 +38,14 @@ interface RenalPreset {
   transcript: string;
   displayTranscript?: string;
   bottles: Preservative[];
-  procedurePatch?: Partial<Record<RenalProcedureKey, { descriptors?: TissueDescriptor[] }>>;
+  procedurePatch?: Partial<Record<RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number }>>;
 }
 
 const RENAL_PRESETS: RenalPreset[] = [
   {
     id: 'normal-case',
     label: 'Normal case',
-    bottles: ['formalin', 'michels', 'glutaraldehyde'],
+    bottles: ['formalin', 'michels'],
     displayTranscript:
       "Received in Michel's are 2 pieces of tissue, measuring 0.8 and 0.9 cm. The tissue appearance is tan.\n" +
       "Received in Formalin are 3 pieces of tissue, measuring 0.5, 0.7, and 1.0 cm. The tissue appearance is tan.\n" +
@@ -57,6 +57,7 @@ const RENAL_PRESETS: RenalPreset[] = [
     procedurePatch: {
       lightMicroscopy: { descriptors: ['tan'] },
       immunofluorescence: { descriptors: ['tan'] },
+      electronMicroscopy: { pieces: 2 },
     },
   },
   {
@@ -91,8 +92,12 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     updateRenal((current) => {
       const next = { ...current.procedures[key], ...patch };
       if (patch.size !== undefined) {
-        const all = next.size.split(',').map((s) => s.trim()).filter(Boolean);
-        next.pieces = totalPiecesFromMeasurements(all);
+        const parsed = parse(next.size);
+        const base = totalCount(parsed);
+        const bisectedExtra = key === 'lightMicroscopy'
+          ? parsed.filter((m) => m.descriptors.includes('bisected')).reduce((sum, m) => sum + m.count, 0)
+          : 0;
+        next.pieces = base + bisectedExtra;
       }
       return {
         ...current,
@@ -178,13 +183,13 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         bottleCounts: {
           formalin: activePreset.bottles.includes('formalin') ? 1 : next.bottleCounts.formalin,
           michels: activePreset.bottles.includes('michels') ? 1 : next.bottleCounts.michels,
-          glutaraldehyde: activePreset.bottles.includes('glutaraldehyde') ? 1 : next.bottleCounts.glutaraldehyde,
+          glutaraldehyde: next.bottleCounts.glutaraldehyde,
         },
       };
 
       if (activePreset.procedurePatch) {
         const procedures = { ...next.procedures };
-        for (const [key, patch] of Object.entries(activePreset.procedurePatch) as [RenalProcedureKey, { descriptors?: TissueDescriptor[] }][]) {
+        for (const [key, patch] of Object.entries(activePreset.procedurePatch) as [RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number }][]) {
           procedures[key] = { ...procedures[key], ...patch };
         }
         next = { ...next, procedures };

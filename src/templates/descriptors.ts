@@ -1,13 +1,12 @@
 export const TISSUE_DESCRIPTORS = [
-  { value: 'tan', label: 'Tan' },
-  { value: 'fatty', label: 'Fatty' },
-  { value: 'fatty_end', label: 'Fatty end' },
-  { value: 'bloody', label: 'Bloody' },
-  { value: 'bloody_end', label: 'Bloody end' },
-  { value: 'translucent', label: 'Translucent' },
-  { value: 'red', label: 'Red' },
-  { value: 'pink', label: 'Pink' },
-  { value: 'thin', label: 'Thin' },
+  { value: 'tan',        label: 'Tan',        group: 'appearance' },
+  { value: 'fatty',      label: 'Fatty',      group: 'appearance' },
+  { value: 'fatty_end',  label: 'Fatty end',  group: 'appearance' },
+  { value: 'bloody_end', label: 'Bloody end', group: 'appearance' },
+  { value: 'translucent',label: 'Translucent',group: 'appearance' },
+  { value: 'thin',       label: 'Thin',       group: 'appearance' },
+  { value: 'bisected',   label: 'Bisected',   group: 'section' },
+  { value: 'dissected',  label: 'Dissected',  group: 'section' },
 ] as const;
 
 export type TissueDescriptor = typeof TISSUE_DESCRIPTORS[number]['value'];

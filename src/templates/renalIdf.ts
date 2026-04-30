@@ -128,7 +128,9 @@ export const RENAL_BOTTLE_DEFINITIONS: RenalBottleDefinition[] = [
         procedureKey: 'lightMicroscopy',
         title: 'Light Microscopy',
         subtitle: 'Kidney Biopsy, Level IV — H&E×2, PAS×2, Silver, SMMT, Trichrome',
-        inputKind: 'none',
+        inputKind: 'pieces',
+        unitSingular: 'piece',
+        unitPlural: 'pieces',
       },
       {
         procedureKey: 'electronMicroscopy',
