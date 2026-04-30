@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Tag } from '../components/ui/Tag';
 
 type AccessionTagKey = 'tx' | 'special_stains' | 'congo_red';
 
@@ -12,27 +11,12 @@ interface AccessionTagDef {
 }
 
 const ACCESSION_TAG_DEFS: AccessionTagDef[] = [
-  { key: 'tx', label: 'TX', classes: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+  { key: 'tx', label: 'Surgical Transplant', classes: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
   { key: 'special_stains', label: 'Special Stains', classes: 'bg-orange-100 text-orange-800 border-orange-300' },
   { key: 'congo_red', label: 'Congo Red', classes: 'bg-pink-100 text-pink-800 border-pink-300' },
 ];
 
-const TAG_DEF_BY_KEY: Record<AccessionTagKey, AccessionTagDef> = ACCESSION_TAG_DEFS.reduce(
-  (acc, def) => {
-    acc[def.key] = def;
-    return acc;
-  },
-  {} as Record<AccessionTagKey, AccessionTagDef>,
-);
-
-type EventCategory = 'intake' | 'flag' | 'submit' | 'finalize';
-
-const CATEGORY_LABEL: Record<EventCategory, string> = {
-  intake: 'Intake',
-  flag: 'Flag',
-  submit: 'Submit',
-  finalize: 'Finalize',
-};
+type EventCategory = 'intake' | 'submit' | 'finalize';
 
 interface LogEntry {
   id: string;
@@ -47,35 +31,12 @@ interface LogEntry {
   tags?: AccessionTagKey[];
 }
 
-// Demo's "today" anchor. Keeps the date filter default and the
-// "Yesterday / today" display labels stable regardless of when the
-// demo is run.
+// Demo's "today" anchor. Keeps the date filter default stable regardless
+// of when the demo is run.
 const DEMO_TODAY_YMD = '2026-04-30';
-
-function dateToYmd(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 function entryYmd(entry: LogEntry): string {
   return entry.at.slice(0, 10);
-}
-
-function formatTimestampForDisplay(at: string): string {
-  const d = new Date(at);
-  const ymd = at.slice(0, 10);
-  const today = new Date(`${DEMO_TODAY_YMD}T00:00:00`);
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const yesterdayYmd = dateToYmd(yesterday);
-
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  if (ymd === DEMO_TODAY_YMD) return time;
-  if (ymd === yesterdayYmd) return `Yesterday ${time}`;
-  const month = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `${month}, ${time}`;
 }
 
 const logEntries: LogEntry[] = [
@@ -117,18 +78,6 @@ const logEntries: LogEntry[] = [
     tags: ['special_stains'],
   },
   {
-    id: 'log-4',
-    at: '2026-04-30T10:55:00',
-    accessionNumber: 'S26-12555',
-    patient: 'Priya Shah',
-    caseType: 'Surgical',
-    event: 'Flag raised: bottle leaked',
-    category: 'flag',
-    variant: 'danger',
-    user: 'JD',
-    tags: ['congo_red', 'special_stains'],
-  },
-  {
     id: 'log-5',
     at: '2026-04-30T10:30:00',
     accessionNumber: 'S26-12555',
@@ -152,18 +101,6 @@ const logEntries: LogEntry[] = [
     user: 'JD',
   },
   {
-    id: 'log-9',
-    at: '2026-04-30T12:25:00',
-    accessionNumber: 'S26-12603',
-    patient: 'Wei Chen',
-    caseType: 'Surgical Transplant',
-    event: 'Insufficient cores on TX biopsy — flagged PIF',
-    category: 'flag',
-    variant: 'warning',
-    user: 'JD',
-    tags: ['tx', 'special_stains'],
-  },
-  {
     id: 'log-10',
     at: '2026-04-30T12:08:00',
     accessionNumber: 'S26-12604',
@@ -174,18 +111,6 @@ const logEntries: LogEntry[] = [
     variant: 'info',
     user: 'MS',
     tags: ['tx', 'congo_red'],
-  },
-  {
-    id: 'log-11',
-    at: '2026-04-30T11:50:00',
-    accessionNumber: 'S26-12608',
-    patient: 'Sofia Reyes',
-    caseType: 'Conjunctiva',
-    event: 'IF insufficient — special stains added on LM block',
-    category: 'flag',
-    variant: 'warning',
-    user: 'JD',
-    tags: ['special_stains'],
   },
   {
     id: 'log-12',
@@ -212,18 +137,6 @@ const logEntries: LogEntry[] = [
     tags: ['tx', 'special_stains'],
   },
   {
-    id: 'log-14',
-    at: '2026-04-30T10:15:00',
-    accessionNumber: 'S26-12604',
-    patient: 'Michael Brown',
-    caseType: 'Implantation',
-    event: 'PIF flagged — Congo Red queued for repeat block',
-    category: 'flag',
-    variant: 'danger',
-    user: 'JD',
-    tags: ['tx', 'special_stains', 'congo_red'],
-  },
-  {
     id: 'log-15',
     at: '2026-04-30T09:42:00',
     accessionNumber: 'S26-12476',
@@ -235,44 +148,8 @@ const logEntries: LogEntry[] = [
     user: 'MS',
     tags: ['tx', 'special_stains', 'congo_red'],
   },
-  {
-    id: 'log-16',
-    at: '2026-04-30T09:10:00',
-    accessionNumber: 'S26-12555',
-    patient: 'Priya Shah',
-    caseType: 'Surgical',
-    event: 'Insufficient tissue — amyloid + special stains workup adjusted',
-    category: 'flag',
-    variant: 'warning',
-    user: 'JD',
-    tags: ['special_stains', 'congo_red'],
-  },
-  {
-    id: 'log-17',
-    at: '2026-04-30T08:35:00',
-    accessionNumber: 'S26-12603',
-    patient: 'Wei Chen',
-    caseType: 'Surgical Transplant',
-    event: 'Comprehensive TX workup — PIF + amyloid + special stains',
-    category: 'flag',
-    variant: 'warning',
-    user: 'MS',
-    tags: ['tx', 'special_stains', 'congo_red'],
-  },
 
   // ─── Apr 29 (yesterday) ────────────────────────────────────────────
-  {
-    id: 'log-7',
-    at: '2026-04-29T16:12:00',
-    accessionNumber: 'S26-12476',
-    patient: 'Robert Singh',
-    caseType: 'Surgical Transplant',
-    event: 'CR requested — age change',
-    category: 'flag',
-    variant: 'warning',
-    user: 'MS',
-    tags: ['tx'],
-  },
   {
     id: 'log-8',
     at: '2026-04-29T14:02:00',
@@ -338,19 +215,6 @@ const logEntries: LogEntry[] = [
     category: 'intake',
     variant: 'info',
     user: 'JD',
-  },
-
-  // ─── Apr 24 ────────────────────────────────────────────────────────
-  {
-    id: 'log-22',
-    at: '2026-04-24T10:45:00',
-    accessionNumber: 'S26-12609',
-    patient: 'Ahmed Hassan',
-    caseType: 'Surgical Nerve',
-    event: 'Damaged FedEx package — bottle leaked',
-    category: 'flag',
-    variant: 'danger',
-    user: 'KL',
   },
 
   // ─── Apr 23 ────────────────────────────────────────────────────────
@@ -477,18 +341,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'caseType', label: 'Case Type' },
 ];
 
-function AccessionTag({ tagKey }: { tagKey: AccessionTagKey }) {
-  const def = TAG_DEF_BY_KEY[tagKey];
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${def.classes}`}
-    >
-      {def.label}
-    </span>
-  );
-}
-
-
 interface CaseGroup {
   accessionNumber: string;
   patient: string;
@@ -500,16 +352,14 @@ interface CaseGroup {
 }
 
 interface FilteredCaseGroup extends CaseGroup {
-  // Latest entry on the selected day, plus only that day's entries.
+  // Latest entry on the selected day (used for the Last-Update sort).
   latestOnDay: LogEntry;
-  entriesOnDay: LogEntry[];
 }
 
 export function AccessionLogs() {
   const [caseTypeFilter, setCaseTypeFilter] = useState<string>(ALL_CASE_TYPES);
   const [userFilter, setUserFilter] = useState<string>(ALL_USERS);
   const [activeTags, setActiveTags] = useState<Set<AccessionTagKey>>(new Set());
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('lastUpdate');
   const [sortAsc, setSortAsc] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<string>(DEMO_TODAY_YMD);
@@ -571,9 +421,9 @@ export function AccessionLogs() {
         if (!allMatch) continue;
       }
       // Only entries on the selected day. entries is pre-sorted desc by `at`.
-      const entriesOnDay = g.entries.filter((e) => entryYmd(e) === selectedDate);
-      if (entriesOnDay.length === 0) continue;
-      result.push({ ...g, latestOnDay: entriesOnDay[0]!, entriesOnDay });
+      const matching = g.entries.filter((e) => entryYmd(e) === selectedDate);
+      if (matching.length === 0) continue;
+      result.push({ ...g, latestOnDay: matching[0]! });
     }
     return result;
   }, [caseGroups, caseTypeFilter, userFilter, activeTags, selectedDate]);
@@ -593,15 +443,6 @@ export function AccessionLogs() {
     });
     return sorted;
   }, [filteredGroups, sortKey, sortAsc]);
-
-  function toggleExpanded(accessionNumber: string) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(accessionNumber)) next.delete(accessionNumber);
-      else next.add(accessionNumber);
-      return next;
-    });
-  }
 
   function toggleTag(key: AccessionTagKey) {
     setActiveTags((prev) => {
@@ -775,107 +616,25 @@ export function AccessionLogs() {
           </div>
         ) : (
           <ul className="divide-y divide-arkana-gray-200">
-            {sortedGroups.map((group) => {
-              const isOpen = expanded.has(group.accessionNumber);
-              return (
-                <li key={group.accessionNumber}>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpanded(group.accessionNumber)}
-                    aria-expanded={isOpen}
-                    className="w-full py-3 flex items-start gap-3 text-left hover:bg-arkana-gray-50/60 transition rounded-lg px-2 -mx-2"
-                  >
-                    <span
-                      className={`text-arkana-gray-500 mt-1 transition-transform shrink-0 ${
-                        isOpen ? 'rotate-90' : ''
-                      }`}
-                      aria-hidden
-                    >
-                      ▶
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-arkana-black">
-                          {group.accessionNumber}
-                        </span>
-                        <span className="text-xs text-arkana-gray-500">·</span>
-                        <span className="text-sm text-arkana-gray-500">{group.patient}</span>
-                        <span className="text-xs text-arkana-gray-500">·</span>
-                        <span className="text-xs text-arkana-gray-500">{group.caseType}</span>
-                        {group.tags.length > 0 && (
-                          <div className="flex items-center gap-1 ml-1 flex-wrap">
-                            {group.tags.map((t) => (
-                              <AccessionTag key={t} tagKey={t} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-arkana-gray-500 mt-0.5 truncate">
-                        Latest: {formatTimestampForDisplay(group.latestOnDay.at)} ·{' '}
-                        {group.latestOnDay.event}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Tag variant={group.latestOnDay.variant}>
-                        {CATEGORY_LABEL[group.latestOnDay.category]}
-                      </Tag>
-                      <span className="text-xs text-arkana-gray-500 tabular-nums hidden sm:inline">
-                        {group.entriesOnDay.length} {group.entriesOnDay.length === 1 ? 'event' : 'events'}
-                      </span>
-                      <div className="flex -space-x-1">
-                        {group.users.map((u) => (
-                          <div
-                            key={u}
-                            title={u}
-                            className="h-6 w-6 rounded-full bg-arkana-gray-200 text-arkana-black flex items-center justify-center text-[10px] font-semibold ring-2 ring-white"
-                          >
-                            {u}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </button>
-
-                  {isOpen && (
-                    <div className="pl-7 pr-2 pb-4 -mt-1">
-                      <div className="border-l-2 border-arkana-gray-200 pl-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] uppercase tracking-wide font-bold text-arkana-gray-500">
-                            Timeline
-                          </span>
-                          <Link
-                            to={`/case/${group.accessionNumber}`}
-                            className="text-xs text-arkana-red hover:text-arkana-red-dark hover:underline"
-                          >
-                            Open case →
-                          </Link>
-                        </div>
-                        <ul className="space-y-3">
-                          {group.entriesOnDay.map((entry) => (
-                            <li key={entry.id} className="flex items-start gap-3">
-                              <div className="text-xs text-arkana-gray-500 w-28 shrink-0 mt-0.5 tabular-nums">
-                                {formatTimestampForDisplay(entry.at)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm text-arkana-black">{entry.event}</div>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Tag variant={entry.variant}>
-                                  {CATEGORY_LABEL[entry.category]}
-                                </Tag>
-                                <div className="h-6 w-6 rounded-full bg-arkana-gray-200 text-arkana-black flex items-center justify-center text-[10px] font-semibold">
-                                  {entry.user}
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
+            {sortedGroups.map((group) => (
+              <li key={group.accessionNumber}>
+                <Link
+                  to={`/case/${group.accessionNumber}/gross/view`}
+                  className="flex items-center gap-2 flex-wrap py-3 px-2 -mx-2 rounded-lg hover:bg-arkana-gray-50/60 transition group"
+                >
+                  <span className="text-sm font-semibold text-arkana-black group-hover:text-arkana-red">
+                    {group.accessionNumber}
+                  </span>
+                  <span className="text-xs text-arkana-gray-200" aria-hidden>·</span>
+                  <span className="text-sm text-arkana-black">{group.patient}</span>
+                  <span className="text-xs text-arkana-gray-200" aria-hidden>·</span>
+                  <span className="text-sm text-arkana-gray-500">{group.caseType}</span>
+                  <span className="ml-auto text-xs text-arkana-gray-500 group-hover:text-arkana-red">
+                    Open →
+                  </span>
+                </Link>
+              </li>
+            ))}
           </ul>
         )}
       </Card>
