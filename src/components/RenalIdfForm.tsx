@@ -78,6 +78,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   const activePreset = useRegisterDemoPresets(presets) ?? RENAL_PRESETS[0]!;
   const [pulsedKeys, setPulsedKeys] = useState<RenalProcedureKey[]>([]);
   const [extraBottleName, setExtraBottleName] = useState<string>('Glutaraldehyde');
+  const [paraffinIfAdded, setParaffinIfAdded] = useState(false);
 
   useEffect(() => {
     if (pulsedKeys.length === 0) return;
@@ -270,6 +271,10 @@ export function RenalIdfForm({ caseData, idf }: Props) {
     (d) => !d.isDefault && idf.bottleCounts[d.key] > 0,
   );
 
+  const michelsUnavailable =
+    idf.bottleCounts.michels === 0 ||
+    idf.preAnalyticalQa.noTissueInBottle.includes('michels_bottle');
+
   return (
     <div className="space-y-5">
       <FormHeader caseData={caseData} onReset={handleReset} />
@@ -298,6 +303,9 @@ export function RenalIdfForm({ caseData, idf }: Props) {
         ) : (
           def.label
         );
+        const showParaffinIfTile = def.key === 'formalin' && michelsUnavailable && paraffinIfAdded;
+        const showParaffinIfPrompt = def.key === 'formalin' && michelsUnavailable && !paraffinIfAdded;
+        const hideRoutedTiles = def.key === 'michels' && idf.bottleCounts.michels === 0;
         return (
           <BottleCard
             key={def.key}
@@ -314,7 +322,7 @@ export function RenalIdfForm({ caseData, idf }: Props) {
             pulsed={pulsedKeys.includes(def.primaryProcedureKey)}
             onRemove={!def.isDefault ? () => removeBottle(def.key) : undefined}
           >
-            {def.routedTiles.length > 0 && (
+            {!hideRoutedTiles && (def.routedTiles.length > 0 || showParaffinIfTile || showParaffinIfPrompt) && (
               <RoutedPanels>
                 {def.routedTiles.map((tile) => (
                   <PanelTile
@@ -332,6 +340,24 @@ export function RenalIdfForm({ caseData, idf }: Props) {
                     )}
                   </PanelTile>
                 ))}
+                {showParaffinIfTile && (
+                  <PanelTile
+                    title="Paraffin IF"
+                    subtitle="Paraffin panel — from formalin core"
+                    onRemove={() => setParaffinIfAdded(false)}
+                  />
+                )}
+                {showParaffinIfPrompt && (
+                  <button
+                    type="button"
+                    onClick={() => setParaffinIfAdded(true)}
+                    className="rounded-xl border-2 border-dashed border-arkana-gray-200 px-4 py-3 text-left hover:border-arkana-red hover:text-arkana-red transition w-full"
+                  >
+                    <span className="text-xs font-medium text-arkana-gray-500 group-hover:text-arkana-red">
+                      + Add Paraffin IF routing
+                    </span>
+                  </button>
+                )}
               </RoutedPanels>
             )}
           </BottleCard>
@@ -660,18 +686,33 @@ function RoutedPanels({ children }: { children: React.ReactNode }) {
 function PanelTile({
   title,
   subtitle,
+  onRemove,
   children,
 }: {
   title: string;
   subtitle?: string;
+  onRemove?: () => void;
   children?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-arkana-gray-200 bg-white px-4 py-3">
-      <div className="text-sm font-semibold text-arkana-black">{title}</div>
-      {subtitle && (
-        <div className="text-xs text-arkana-gray-500 mt-0.5">{subtitle}</div>
-      )}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-sm font-semibold text-arkana-black">{title}</div>
+          {subtitle && (
+            <div className="text-xs text-arkana-gray-500 mt-0.5">{subtitle}</div>
+          )}
+        </div>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-xs text-arkana-gray-500 hover:text-arkana-red shrink-0"
+          >
+            Remove
+          </button>
+        )}
+      </div>
       {children}
     </div>
   );

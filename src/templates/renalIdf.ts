@@ -27,7 +27,7 @@ export const RENAL_PROCEDURE_ROWS = [
   },
 ] as const;
 
-export type RenalProcedureKey = typeof RENAL_PROCEDURE_ROWS[number]['key'];
+export type RenalProcedureKey = typeof RENAL_PROCEDURE_ROWS[number]['key'] | 'paraffinIf';
 
 export interface RenalPreAnalyticalQa {
   damagedItems: string[];
@@ -156,7 +156,9 @@ export const RENAL_BOTTLE_DEFINITIONS: RenalBottleDefinition[] = [
         procedureKey: 'immunofluorescence',
         title: 'Immunofluorescence Profile',
         subtitle: '×9 — IgA, IgG, IgM, C3, C1Q, Albumin, Fibrinogen, Kappa, Lambda',
-        inputKind: 'none',
+        inputKind: 'pieces',
+        unitSingular: 'piece',
+        unitPlural: 'pieces',
       },
     ],
     isDefault: true,
@@ -201,6 +203,14 @@ export function createEmptyRenalIdf(): RenalIdfState {
       pifReason: null,
     };
   }
+  procedures['paraffinIf'] = {
+    pieces: 0,
+    size: '',
+    descriptors: [],
+    notes: '',
+    isPif: false,
+    pifReason: null,
+  };
   return {
     panelType: 'renal',
     bottleCounts: { formalin: 1, michels: 1, glutaraldehyde: 0 },
