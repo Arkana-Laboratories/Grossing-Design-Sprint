@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { ArkanaLogo } from './brand/ArkanaLogo';
 import {
   NotificationsPanel,
@@ -39,9 +39,12 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 
 export function AppShell() {
   const year = new Date().getFullYear();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const [panelOpen, setPanelOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const unreadCount = hasOpened ? 0 : notifications.length;
 
   function openPanel() {
@@ -88,11 +91,38 @@ export function AppShell() {
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-arkana-red" />
             )}
           </button>
-          <div
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-arkana-black text-white flex items-center justify-center text-xs sm:text-sm font-bold shrink-0"
-            title="John Doe"
-          >
-            JD
+          <div ref={userMenuRef} className="relative">
+            <button
+              onClick={() => setUserMenuOpen((v) => !v)}
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-arkana-black text-white flex items-center justify-center text-xs sm:text-sm font-bold shrink-0 hover:opacity-80 transition"
+              aria-label="User menu"
+              aria-expanded={userMenuOpen}
+            >
+              JD
+            </button>
+            {userMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setUserMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 z-30 w-48 bg-white rounded-xl border border-arkana-gray-200 shadow-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-arkana-gray-100">
+                    <div className="text-sm font-semibold text-arkana-black">John Doe</div>
+                    <div className="text-xs text-arkana-gray-500 mt-0.5">Grossing tech</div>
+                  </div>
+                  <button
+                    onClick={() => { setUserMenuOpen(false); navigate('/login'); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-arkana-black hover:bg-arkana-gray-50 transition flex items-center gap-2"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-arkana-gray-500">
+                      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+                    </svg>
+                    Log out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>

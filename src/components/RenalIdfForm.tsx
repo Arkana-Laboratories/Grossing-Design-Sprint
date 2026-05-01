@@ -44,6 +44,11 @@ interface RenalPreset {
   procedurePatch?: Partial<Record<RenalProcedureKey, { descriptors?: TissueDescriptor[]; pieces?: number; size?: string }>>;
 }
 
+const ACCESSION_TO_PRESET_ID: Record<string, string> = {
+  'S26-10234': 'normal-case',
+  'S26-12345': 'special-case',
+};
+
 const RENAL_PRESETS: RenalPreset[] = [
   {
     id: 'normal-case',
@@ -111,10 +116,16 @@ export function RenalIdfForm({ caseData, idf }: Props) {
   const { updateRenal, resetIdf, submitIdf } = useCaseSession();
 
   const presets = useMemo(() => RENAL_PRESETS, []);
-  const activePreset = useRegisterDemoPresets(presets) ?? RENAL_PRESETS[0]!;
+  useRegisterDemoPresets(presets);
+  const activePreset =
+    RENAL_PRESETS.find((p) => p.id === ACCESSION_TO_PRESET_ID[caseData.accessionNumber]) ??
+    RENAL_PRESETS[0]!;
   const [pulsedKeys, setPulsedKeys] = useState<RenalProcedureKey[]>([]);
   const [extraBottleName, setExtraBottleName] = useState<string>('Glutaraldehyde');
-  const [paraffinIfAdded, setParaffinIfAdded] = useState(false);
+  const paraffinIfAdded = idf.paraffinIfEnabled;
+  function setParaffinIfAdded(val: boolean) {
+    updateRenal((current) => ({ ...current, paraffinIfEnabled: val }));
+  }
 
   useEffect(() => {
     if (pulsedKeys.length === 0) return;
@@ -495,16 +506,13 @@ export function RenalIdfForm({ caseData, idf }: Props) {
       )}
 
       <div className="flex justify-end gap-3 flex-wrap">
-        <Button variant="ghost" onClick={handleReset}>
-          Reset form
-        </Button>
         <Button
           variant="primary"
           size="lg"
           onClick={handleSubmit}
           disabled={validationErrors.length > 0}
         >
-          Submit IDF
+          Submit
         </Button>
       </div>
     </div>
@@ -916,6 +924,15 @@ function formatDob(dob: string): string {
   return `${month}/${day}/${year}`;
 }
 
+function calculateAge(dob: string): number {
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 function formatReceivedDate(iso: string | undefined): string {
   const date = iso ? new Date(iso) : new Date();
   return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
@@ -943,6 +960,10 @@ function FormHeader({ caseData, onReset }: HeaderProps) {
           <div className="flex items-center gap-2.5 mt-2 flex-wrap">
             <span className="text-sm font-medium text-arkana-ink">
               {caseData.patient.firstName} {caseData.patient.lastName}
+            </span>
+            <span className="text-arkana-gray-200 select-none">·</span>
+            <span className="text-sm text-arkana-gray-500">
+              {calculateAge(caseData.patient.dateOfBirth)} y/o
             </span>
             <span className="text-arkana-gray-200 select-none">·</span>
             <span className="text-sm text-arkana-gray-500">

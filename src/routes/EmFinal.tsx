@@ -84,8 +84,7 @@ export function EmFinal() {
             {caseData.accessionNumber}
           </h1>
           <p className="text-arkana-gray-500 text-sm mt-0.5">
-            {caseData.patient.lastName}, {caseData.patient.firstName} · MRN{' '}
-            {caseData.patient.medicalRecordNumber}
+            {caseData.patient.lastName}, {caseData.patient.firstName}
           </p>
         </div>
         <Button variant="secondary" onClick={handleExport}>

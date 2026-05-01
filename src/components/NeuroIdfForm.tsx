@@ -188,8 +188,7 @@ export function NeuroIdfForm({ caseData, idf }: Props) {
             {caseData.accessionNumber}
           </h1>
           <p className="text-arkana-gray-500 text-sm mt-0.5">
-            {caseData.patient.firstName} {caseData.patient.lastName} · MRN{' '}
-            {caseData.patient.medicalRecordNumber}
+            {caseData.patient.firstName} {caseData.patient.lastName}
           </p>
         </div>
         <Button variant="secondary" onClick={handleReset}>

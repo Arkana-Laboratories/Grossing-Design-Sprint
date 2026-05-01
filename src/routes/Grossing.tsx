@@ -41,10 +41,10 @@ export function Grossing() {
   return (
     <div>
       <Link
-        to={`/case/${caseData.accessionNumber}`}
+        to="/"
         className="text-sm text-arkana-red hover:text-arkana-red-dark hover:underline"
       >
-        ← Back to case
+        ← Back to home
       </Link>
       <div className="mt-3">
         {session.panelType === 'renal' ? (

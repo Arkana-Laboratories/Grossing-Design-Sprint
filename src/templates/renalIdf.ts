@@ -199,6 +199,7 @@ export interface RenalIdfState {
   comments: string;
   noEmReason: NoEmReason | null;
   noEmReasonOther: string;
+  paraffinIfEnabled: boolean;
 }
 
 export function createEmptyRenalIdf(): RenalIdfState {
@@ -227,6 +228,7 @@ export function createEmptyRenalIdf(): RenalIdfState {
     procedures,
     noEmReason: null,
     noEmReasonOther: '',
+    paraffinIfEnabled: false,
     preAnalyticalQa: {
       damagedItems: [],
       materialsNotLabeled: [],

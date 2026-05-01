@@ -54,4 +54,5 @@ export interface Case {
   status: CaseStatus;
   specialOrders: string[];
   priorCaseAccession?: string;
+  physician?: string;
 }
