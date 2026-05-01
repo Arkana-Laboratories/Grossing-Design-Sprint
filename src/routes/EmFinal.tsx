@@ -27,7 +27,7 @@ const preservativeLabel: Record<Preservative, string> = {
 
 export function EmFinal() {
   const { accessionNumber } = useParams<{ accessionNumber: string }>();
-  const { session } = useCaseSession();
+  const { getSubmittedIdf } = useCaseSession();
   const toast = useToast();
 
   const caseData = accessionNumber ? getCaseByAccession(accessionNumber) : undefined;
@@ -51,10 +51,8 @@ export function EmFinal() {
     );
   }
 
-  const sessionMatchesCase =
-    session &&
-    session.accessionNumber === caseData.accessionNumber &&
-    session.panelType === caseData.panelType;
+  const submittedEntry = getSubmittedIdf(caseData.accessionNumber);
+  const sessionMatchesCase = submittedEntry && submittedEntry.panelType === caseData.panelType;
 
   function handleExport() {
     toast({ message: 'Sent to PDF queue', variant: 'info' });
@@ -147,11 +145,11 @@ export function EmFinal() {
         </Card>
       )}
 
-      {sessionMatchesCase && session.panelType === 'renal' && (
-        <RenalReadonlyView idf={session.idf} caseData={caseData} />
+      {sessionMatchesCase && submittedEntry.panelType === 'renal' && (
+        <RenalReadonlyView idf={submittedEntry.idf} caseData={caseData} />
       )}
-      {sessionMatchesCase && session.panelType === 'neuro' && (
-        <NeuroReadonlyView idf={session.idf} caseData={caseData} />
+      {sessionMatchesCase && submittedEntry.panelType === 'neuro' && (
+        <NeuroReadonlyView idf={submittedEntry.idf} caseData={caseData} />
       )}
 
       {caseData.flags.length > 0 && (

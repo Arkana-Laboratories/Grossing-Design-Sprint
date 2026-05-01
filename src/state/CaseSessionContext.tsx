@@ -8,6 +8,7 @@ import {
   type NeuroIdfState,
   createEmptyNeuroIdf,
 } from '../templates/neuroIdf';
+import { SEED_IDFS } from '../mock/seedIdfs';
 
 export type IdfState = RenalIdfState | NeuroIdfState;
 
@@ -53,14 +54,15 @@ const CaseSessionContext = createContext<ContextValue | null>(null);
 const SUBMITTED_KEY = 'cortex.submittedIdfs';
 
 function loadSubmitted(): Record<string, SubmittedIdf> {
-  if (typeof window === 'undefined') return {};
+  if (typeof window === 'undefined') return { ...SEED_IDFS };
   try {
     const raw = window.localStorage.getItem(SUBMITTED_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, SubmittedIdf>;
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    const stored = raw ? (JSON.parse(raw) as Record<string, SubmittedIdf>) : {};
+    const base = stored && typeof stored === 'object' ? stored : {};
+    // Seed data fills in any accession not already in localStorage
+    return { ...SEED_IDFS, ...base };
   } catch {
-    return {};
+    return { ...SEED_IDFS };
   }
 }
 

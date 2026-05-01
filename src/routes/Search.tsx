@@ -40,11 +40,7 @@ export function Search() {
     : mockCases;
 
   function handleClick(c: Case) {
-    if (c.status === 'submitted' || c.status === 'finalized') {
-      navigate(`/case/${c.accessionNumber}/em-final`);
-    } else {
-      navigate(`/case/${c.accessionNumber}`);
-    }
+    navigate(`/case/${c.accessionNumber}`);
   }
 
   return (

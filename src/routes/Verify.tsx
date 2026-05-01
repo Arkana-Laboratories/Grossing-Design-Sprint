@@ -85,14 +85,14 @@ export function Verify() {
       navigate(`/case/${caseData!.accessionNumber}/gross`);
     } else {
       toast({ message: `Flagged for review (${idfId}) — accessioning notified`, variant: 'warning' });
-      navigate('/gross');
+      navigate('/');
     }
   }
 
   return (
     <div className="max-w-xl mx-auto">
-      <Link to="/gross" className="text-sm text-arkana-red hover:text-arkana-red-dark hover:underline">
-        ← Back
+      <Link to="/" className="text-sm text-arkana-red hover:text-arkana-red-dark hover:underline">
+        ← Home
       </Link>
 
       <div className="bg-white border border-arkana-gray-200 rounded-xl shadow-sm mt-4 overflow-hidden">
